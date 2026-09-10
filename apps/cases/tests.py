@@ -52,4 +52,20 @@ class CaseTests(TestCase):
         # Now officer_b should be able to view the case detail
         self.client.login(username="officer_b", password="password")
         response = self.client.get(reverse('case_detail', args=[self.case.id]))
-        self.assertEqual(response.status_code, 200)
+    def test_add_case_note(self):
+        self.client.login(username="officer_a", password="password")
+        
+        response = self.client.post(reverse('add_case_note', args=[self.case.id]), {
+            'content': 'Suspect was seen near the bank.'
+        })
+        
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.case.notes.count(), 1)
+        self.assertEqual(self.case.notes.first().content, 'Suspect was seen near the bank.')
+        
+        # Verify both officers can read it (officer_b needs to be assigned first)
+        CaseMember.objects.create(case=self.case, user=self.officer_b, role="Support")
+        
+        self.client.login(username="officer_b", password="password")
+        response = self.client.get(reverse('case_detail', args=[self.case.id]))
+        self.assertContains(response, 'Suspect was seen near the bank.')

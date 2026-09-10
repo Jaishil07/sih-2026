@@ -38,6 +38,11 @@ class EvidenceTests(TestCase):
             'location': 'Forensic Lab'
         })
         
+        # Accept custody as admin
+        transfer = CustodyTransfer.objects.last()
+        self.client.login(username="admin", password="password")
+        self.client.post(reverse('accept_custody_transfer', args=[transfer.id]))
+        
         evidence.refresh_from_db()
         self.assertEqual(evidence.current_custodian, self.admin)
         self.assertEqual(CustodyTransfer.objects.count(), 2)
@@ -77,3 +82,33 @@ class EvidenceTests(TestCase):
         self.assertEqual(evidence.status, Evidence.Status.APPROVED)
         self.assertEqual(evidence.approved_by, self.admin)
         self.assertEqual(evidence.approval_notes, 'Approved by Admin')
+
+    def test_custody_transfer_workflow(self):
+        # Admin creates evidence
+        evidence = Evidence.objects.create(case=self.case, evidence_number='EV-004', description='Laptop', current_custodian=self.officer_a)
+        
+        # officer_a initiates transfer to officer_b
+        self.client.login(username="officer_a", password="password")
+        response = self.client.post(reverse('evidence_detail', args=[evidence.id]), {
+            'to_user': self.officer_b.id,
+            'reason': 'Lab Analysis',
+            'location': 'Forensic Lab 1'
+        })
+        
+        evidence.refresh_from_db()
+        # Custodian should still be officer_a
+        self.assertEqual(evidence.current_custodian, self.officer_a)
+        
+        transfer = CustodyTransfer.objects.last()
+        self.assertEqual(transfer.status, CustodyTransfer.Status.PENDING)
+        self.assertEqual(transfer.to_user, self.officer_b)
+        
+        # officer_b accepts
+        self.client.login(username="officer_b", password="password")
+        response = self.client.post(reverse('accept_custody_transfer', args=[transfer.id]))
+        
+        evidence.refresh_from_db()
+        transfer.refresh_from_db()
+        
+        self.assertEqual(transfer.status, CustodyTransfer.Status.ACCEPTED)
+        self.assertEqual(evidence.current_custodian, self.officer_b)

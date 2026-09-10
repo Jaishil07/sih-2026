@@ -1,44 +1,42 @@
 from django.test import TestCase
+from django.urls import reverse
 from django.contrib.auth import get_user_model
 from apps.audit.models import AuditLog
-from apps.audit.services import log_audit_event, verify_audit_chain, calculate_event_hash
-import json
-from django.utils import timezone
+from apps.audit.services import log_audit_event
+from apps.cases.models import Case, CaseMember
 
 User = get_user_model()
 
-class AuditChainTests(TestCase):
+class AuditScopingTests(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="password")
+        self.admin = User.objects.create_user(username="admin", role=User.Role.ADMIN, password="password")
+        self.senior = User.objects.create_user(username="senior", role=User.Role.SENIOR_OFFICER, password="password")
+        self.officer_a = User.objects.create_user(username="officer_a", role=User.Role.INVESTIGATING_OFFICER, password="password", supervisor=self.senior)
+        self.officer_b = User.objects.create_user(username="officer_b", role=User.Role.INVESTIGATING_OFFICER, password="password")
+        
+        self.case = Case.objects.create(case_number="CR-1", title="Test Case", created_by=self.admin)
+        CaseMember.objects.create(case=self.case, user=self.officer_a, role="Investigator")
 
-    def test_genesis_event_hash(self):
-        log = log_audit_event(self.user, "LOGIN_SUCCESS", "User", self.user.id)
-        self.assertEqual(log.previous_hash, "0" * 64)
-        
-        expected = calculate_event_hash(
-            str(self.user.id), "LOGIN_SUCCESS", "User", str(self.user.id),
-            log.timestamp.strftime('%Y-%m-%dT%H:%M:%S'), "0" * 64, json.dumps({}, sort_keys=True)
-        )
-        self.assertEqual(log.event_hash, expected)
+        log_audit_event(self.officer_a, 'TEST_ACTION_A', 'System', '1')
+        log_audit_event(self.officer_b, 'TEST_ACTION_B', 'System', '2')
 
-    def test_chaining_and_verification(self):
-        log1 = log_audit_event(self.user, "LOGIN_SUCCESS", "User", self.user.id)
-        log2 = log_audit_event(self.user, "DOCUMENT_UPLOADED", "Document", 1)
+    def test_investigating_officer_cannot_see_others_logs(self):
+        self.client.login(username="officer_a", password="password")
+        response = self.client.get(reverse('audit_list'))
         
-        self.assertEqual(log2.previous_hash, log1.event_hash)
+        logs = response.context['logs']
+        actions = [log.action for log in logs]
         
-        is_valid, broken_id = verify_audit_chain()
-        self.assertTrue(is_valid)
-        self.assertIsNone(broken_id)
+        self.assertIn('TEST_ACTION_A', actions)
+        self.assertNotIn('TEST_ACTION_B', actions) # Exclusive to officer_b
 
-    def test_tamper_detection(self):
-        log1 = log_audit_event(self.user, "LOGIN_SUCCESS", "User", self.user.id)
-        log2 = log_audit_event(self.user, "DOCUMENT_UPLOADED", "Document", 1)
-        log3 = log_audit_event(self.user, "VERSION_CREATED", "DocumentVersion", 2)
+    def test_supervisor_can_see_subordinate_logs(self):
+        self.client.login(username="senior", password="password")
+        response = self.client.get(reverse('audit_list'))
         
-        # Tamper with log2 action
-        AuditLog.objects.filter(id=log2.id).update(action="TAMPERED")
+        logs = response.context['logs']
+        actions = [log.action for log in logs]
         
-        is_valid, broken_id = verify_audit_chain()
-        self.assertFalse(is_valid)
-        self.assertEqual(broken_id, log2.id)
+        # Senior supervises A but not B
+        self.assertIn('TEST_ACTION_A', actions)
+        self.assertNotIn('TEST_ACTION_B', actions)

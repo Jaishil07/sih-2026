@@ -41,6 +41,9 @@
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="team-tab" data-bs-toggle="tab" data-bs-target="#team" type="button" role="tab">Assigned Officers</button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button" role="tab">Case Notes</button>
+    </li>
 </ul>
 
 <div class="tab-content" id="caseTabsContent">
@@ -182,6 +185,39 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+    </div>
+
+    <!-- Notes Tab -->
+    <div class="tab-pane fade" id="notes" role="tabpanel">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <form method="post" action="{% url 'add_case_note' case.pk %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <textarea name="content" class="form-control" rows="3" placeholder="Add an investigative note..." required></textarea>
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary">Add Note</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="timeline">
+            {% for note in notes %}
+            <div class="card shadow-sm mb-3 border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>{{ note.author.username }} <span class="text-muted small fw-normal">({{ note.author.get_role_display }})</span></strong>
+                        <span class="text-muted small">{{ note.created_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                    <p class="mb-0">{{ note.content|linebreaksbr }}</p>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center text-muted py-4">No collaboration notes yet.</div>
+            {% endfor %}
         </div>
     </div>
 </div>

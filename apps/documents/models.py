@@ -5,10 +5,26 @@ from apps.cases.models import Case
 
 
 class Document(models.Model):
+    class DocumentType(models.TextChoices):
+        FIR = 'FIR', 'First Information Report (FIR)'
+        FORENSIC_REPORT = 'FORENSIC_REPORT', 'Forensic Analysis Report'
+        WITNESS_STATEMENT = 'WITNESS_STATEMENT', 'Witness Statement'
+        CHARGE_SHEET = 'CHARGE_SHEET', 'Charge Sheet'
+        COURT_FILING = 'COURT_FILING', 'Court Filing'
+        LEGAL_NOTICE = 'LEGAL_NOTICE', 'Legal Notice'
+        JUDGMENT = 'JUDGMENT', 'Judgment / Court Order'
+        OTHER = 'OTHER', 'Other Supporting Document'
+
+    class Classification(models.TextChoices):
+        INTERNAL = 'INTERNAL', 'Internal / Restricted'
+        CONFIDENTIAL = 'CONFIDENTIAL', 'Confidential'
+        HIGHLY_CONFIDENTIAL = 'HIGHLY_CONFIDENTIAL', 'Highly Confidential / Secret'
+        EVIDENCE = 'EVIDENCE', 'Evidentiary Record'
+
     case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name="documents")
     title = models.CharField(max_length=255)
-    document_type = models.CharField(max_length=100)
-    classification = models.CharField(max_length=50, default="INTERNAL")
+    document_type = models.CharField(max_length=100, choices=DocumentType.choices, default=DocumentType.OTHER)
+    classification = models.CharField(max_length=50, choices=Classification.choices, default=Classification.INTERNAL)
     status = models.CharField(max_length=50, default="ACTIVE")
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True

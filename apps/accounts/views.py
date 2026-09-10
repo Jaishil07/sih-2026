@@ -41,4 +41,11 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             # Simplified: just show logs triggered by them for now, or logs related to their cases.
             context["recent_activity"] = AuditLog.objects.filter(actor=user).order_by('-timestamp')[:5]
             
+        # Pending Custody Transfers
+        from apps.evidence.models import CustodyTransfer
+        context["pending_transfers"] = CustodyTransfer.objects.filter(
+            to_user=user, 
+            status=CustodyTransfer.Status.PENDING
+        ).order_by('-timestamp')
+            
         return context

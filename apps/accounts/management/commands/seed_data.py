@@ -65,7 +65,17 @@ class Command(BaseCommand):
                 user.save()
             created_users[data["username"]] = user
 
-        self.stdout.write("Users seeded.")
+        # Set supervisors
+        officer_a = created_users["officer_a"]
+        officer_b = created_users["officer_b"]
+        senior_officer = created_users["senior_officer"]
+        
+        officer_a.supervisor = senior_officer
+        officer_b.supervisor = senior_officer
+        officer_a.save()
+        officer_b.save()
+
+        self.stdout.write("Users and hierarchy seeded.")
 
         # Create Case
         case, created = Case.objects.get_or_create(

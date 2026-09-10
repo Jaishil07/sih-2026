@@ -48,3 +48,15 @@ class PersonOfInterest(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.get_role_in_case_display()})"
+
+class CaseNote(models.Model):
+    case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='notes')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Note by {self.author.username} on {self.case.case_number}"

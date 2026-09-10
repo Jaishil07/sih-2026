@@ -110,16 +110,29 @@
                 <div class="timeline">
                     {% for transfer in transfers %}
                     <div class="timeline-item pb-4 border-start ms-3 ps-4 position-relative">
-                        <span class="position-absolute top-0 start-0 translate-middle p-2 bg-primary border border-light rounded-circle"></span>
+                        {% if transfer.status == 'PENDING' %}
+                        <span class="position-absolute top-0 start-0 translate-middle p-2 bg-warning border border-light rounded-circle" title="Pending Acceptance"></span>
+                        {% elif transfer.status == 'REJECTED' %}
+                        <span class="position-absolute top-0 start-0 translate-middle p-2 bg-danger border border-light rounded-circle" title="Rejected"></span>
+                        {% else %}
+                        <span class="position-absolute top-0 start-0 translate-middle p-2 bg-success border border-light rounded-circle" title="Accepted"></span>
+                        {% endif %}
                         <div class="mb-1">
-                            <span class="fw-bold">{{ transfer.to_user.username|default:"System" }}</span> received from 
+                            <span class="fw-bold">{{ transfer.to_user.username|default:"System" }}</span> 
+                            {% if transfer.status == 'PENDING' %} is pending receipt from {% elif transfer.status == 'REJECTED' %} rejected transfer from {% else %} received from {% endif %}
                             <span class="text-muted">{{ transfer.from_user.username|default:"Field/Unknown" }}</span>
                         </div>
-                        <div class="small text-muted mb-2">{{ transfer.timestamp|date:"M d, Y H:i:s" }}</div>
+                        <div class="small text-muted mb-2">
+                            Initiated: {{ transfer.timestamp|date:"M d, Y H:i:s" }}
+                            {% if transfer.accepted_at %}<br>Accepted: {{ transfer.accepted_at|date:"M d, Y H:i:s" }}{% endif %}
+                        </div>
                         <div class="card bg-light border-0">
                             <div class="card-body py-2 px-3 small">
                                 <div><strong>Reason:</strong> {{ transfer.reason }}</div>
                                 <div><strong>Location:</strong> {{ transfer.location|default:"Not specified" }}</div>
+                                {% if transfer.status == 'REJECTED' %}
+                                <div class="text-danger mt-1"><strong>Rejection Reason:</strong> {{ transfer.rejection_reason }}</div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

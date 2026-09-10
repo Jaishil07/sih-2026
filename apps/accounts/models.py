@@ -40,6 +40,13 @@ class User(AbstractUser):
         max_length=100,
         blank=True,
     )
+    supervisor = models.ForeignKey(
+        'self', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='subordinates'
+    )
 
     class Meta:
         ordering = ["username"]

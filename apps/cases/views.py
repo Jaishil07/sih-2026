@@ -4,7 +4,7 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from apps.cases.models import Case, CaseMember, PersonOfInterest
+from apps.cases.models import Case, CaseMember, PersonOfInterest, CaseNote
 from apps.accounts.models import User
 from apps.accounts.services import can_access_case
 from apps.audit.services import log_audit_event
@@ -33,6 +33,7 @@ def case_detail_view(request, pk):
     evidence_items = case.evidence_items.all().order_by('-created_at')
     persons_of_interest = case.persons_of_interest.all().order_by('-created_at')
     members = case.members.select_related('user').all()
+    notes = case.notes.select_related('author').all()
     
     # Available users for assignment (admins/seniors can assign)
     available_users = User.objects.exclude(id__in=members.values_list('user_id', flat=True))
@@ -43,6 +44,7 @@ def case_detail_view(request, pk):
         "evidence_items": evidence_items,
         "persons_of_interest": persons_of_interest,
         "members": members,
+        "notes": notes,
         "available_users": available_users
     })
 
@@ -101,4 +103,25 @@ def assign_member_view(request, pk):
     log_audit_event(request.user, 'MEMBER_ASSIGNED', 'Case', case.id, details={'assigned_user_id': user_to_assign.id})
     messages.success(request, f"{user_to_assign.username} assigned to case.")
     
+    return redirect('case_detail', pk=case.id)
+
+@login_required
+def add_case_note_view(request, pk):
+    if request.method != 'POST':
+        return redirect('case_detail', pk=pk)
+        
+    case = get_object_or_404(Case, pk=pk)
+    if not can_access_case(request.user, case):
+        raise PermissionDenied
+
+    content = request.POST.get('content')
+    if content:
+        note = CaseNote.objects.create(
+            case=case,
+            author=request.user,
+            content=content
+        )
+        log_audit_event(request.user, 'CASE_NOTE_ADDED', 'CaseNote', note.id)
+        messages.success(request, "Case note added successfully.")
+        
     return redirect('case_detail', pk=case.id)
