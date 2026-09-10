@@ -49,3 +49,31 @@ class EvidenceTests(TestCase):
         self.client.login(username="officer_b", password="password")
         response = self.client.get(reverse('evidence_detail', args=[evidence.id]))
         self.assertEqual(response.status_code, 403)
+
+    def test_evidence_approval_workflow(self):
+        # Admin creates evidence
+        evidence = Evidence.objects.create(case=self.case, evidence_number='EV-003', description='Tablet', current_custodian=self.officer_a)
+        
+        # Default status is PENDING_APPROVAL
+        self.assertEqual(evidence.status, Evidence.Status.PENDING_APPROVAL)
+        
+        # Investigating officer tries to approve
+        self.client.login(username="officer_a", password="password")
+        response = self.client.post(reverse('approve_evidence', args=[evidence.id]), {
+            'action': 'approve',
+            'notes': 'Looks good'
+        })
+        evidence.refresh_from_db()
+        self.assertEqual(evidence.status, Evidence.Status.PENDING_APPROVAL) # Fails due to permissions
+        
+        # Senior Officer/Admin tries to approve
+        self.client.login(username="admin", password="password")
+        response = self.client.post(reverse('approve_evidence', args=[evidence.id]), {
+            'action': 'approve',
+            'notes': 'Approved by Admin'
+        })
+        
+        evidence.refresh_from_db()
+        self.assertEqual(evidence.status, Evidence.Status.APPROVED)
+        self.assertEqual(evidence.approved_by, self.admin)
+        self.assertEqual(evidence.approval_notes, 'Approved by Admin')

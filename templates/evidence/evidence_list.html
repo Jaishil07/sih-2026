@@ -18,7 +18,8 @@
                                 <th>Evidence #</th>
                                 <th>Case Number</th>
                                 <th>Description</th>
-                                <th>Current Custodian</th>
+                                <th>Custodian</th>
+                                <th>Status</th>
                                 <th>Registered On</th>
                                 <th>Actions</th>
                             </tr>
@@ -34,14 +35,26 @@
                                         {{ item.current_custodian.username|default:"Unassigned" }}
                                     </span>
                                 </td>
+                                <td>
+                                    {% if item.status == 'APPROVED' %}
+                                    <span class="badge bg-success">Approved</span>
+                                    {% elif item.status == 'REJECTED' %}
+                                    <span class="badge bg-danger">Rejected</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                    {% endif %}
+                                </td>
                                 <td>{{ item.created_at|date:"M d, Y" }}</td>
                                 <td>
-                                    <a href="{% url 'evidence_detail' item.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+                                    <a href="{% url 'evidence_detail' item.pk %}" class="btn btn-sm btn-outline-primary me-1">View</a>
+                                    {% if item.status == 'PENDING_APPROVAL' and user.role in 'ADMIN,SENIOR_OFFICER' %}
+                                    <a href="{% url 'evidence_detail' item.pk %}" class="btn btn-sm btn-warning text-dark">Review</a>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">No evidence registered.</td>
+                                <td colspan="7" class="text-center text-muted py-4">No evidence registered.</td>
                             </tr>
                             {% endfor %}
                         </tbody>

@@ -13,7 +13,14 @@
         <h2>{{ evidence.evidence_number }}</h2>
         <div class="mt-2">
             <span class="badge bg-secondary me-2">Registered: {{ evidence.created_at|date:"M d, Y" }}</span>
-            <span class="badge bg-primary">Custodian: {{ evidence.current_custodian.username|default:"Unassigned" }}</span>
+            <span class="badge bg-primary me-2">Custodian: {{ evidence.current_custodian.username|default:"Unassigned" }}</span>
+            {% if evidence.status == 'APPROVED' %}
+            <span class="badge bg-success">Status: Approved</span>
+            {% elif evidence.status == 'REJECTED' %}
+            <span class="badge bg-danger">Status: Rejected</span>
+            {% else %}
+            <span class="badge bg-warning text-dark">Status: Pending Approval</span>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -21,6 +28,33 @@
 <div class="row">
     <!-- Details and Transfer Action -->
     <div class="col-md-5 mb-4">
+        {% if evidence.status == 'PENDING_APPROVAL' and user.role in 'ADMIN,SENIOR_OFFICER' %}
+        <div class="card shadow-sm border-0 mb-4 border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="card-title mb-0">Approval Review</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'approve_evidence' evidence.id %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Review Notes</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="Optional notes for approval/rejection"></textarea>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <button type="submit" name="action" value="reject" class="btn btn-outline-danger">Reject</button>
+                        <button type="submit" name="action" value="approve" class="btn btn-success">Approve Evidence</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% elif evidence.status != 'PENDING_APPROVAL' %}
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body py-2 px-3 small bg-light rounded">
+                <strong>{{ evidence.get_status_display }}</strong> by {{ evidence.approved_by.username|default:"Unknown" }} on {{ evidence.approved_at|date:"M d, Y H:i" }}<br>
+                {% if evidence.approval_notes %}<em>"{{ evidence.approval_notes }}"</em>{% endif %}
+            </div>
+        </div>
+        {% endif %}
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-header bg-white">
                 <h5 class="card-title mb-0">Details</h5>

@@ -28,4 +28,23 @@ class CaseMember(models.Model):
         unique_together = ("case", "user")
 
     def __str__(self):
-        return f"{self.user.username} in {self.case.case_number} ({self.role})"
+        return f"{self.user.username} in {self.case.case_number} as {self.role}"
+
+
+class PersonOfInterest(models.Model):
+    class Role(models.TextChoices):
+        SUSPECT = 'SUSPECT', 'Suspect'
+        WITNESS = 'WITNESS', 'Witness'
+        VICTIM = 'VICTIM', 'Victim'
+        PERSON_OF_INTEREST = 'PERSON_OF_INTEREST', 'Person of Interest'
+
+    case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='persons_of_interest')
+    name = models.CharField(max_length=200)
+    alias = models.CharField(max_length=100, blank=True)
+    role_in_case = models.CharField(max_length=50, choices=Role.choices, default=Role.SUSPECT)
+    identification_number = models.CharField(max_length=100, blank=True, help_text="Aadhaar, Passport, or Govt ID ref")
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.get_role_in_case_display()})"

@@ -5,6 +5,7 @@ from django.core.exceptions import PermissionDenied
 from django.contrib import messages
 from django.views.generic import ListView
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 from apps.cases.models import Case
 from apps.evidence.models import Evidence, CustodyTransfer
@@ -92,3 +93,37 @@ def evidence_detail_view(request, evidence_id):
         'transfers': transfers,
         'users': users
     })
+
+@login_required
+def approve_evidence_view(request, evidence_id):
+    if request.method != 'POST':
+        return redirect('evidence_detail', evidence_id=evidence_id)
+        
+    evidence = get_object_or_404(Evidence, id=evidence_id)
+    
+    # Check permissions: ADMIN, SENIOR_OFFICER, or Case Lead. Simplified: ADMIN or SENIOR_OFFICER.
+    if request.user.role not in [request.user.Role.ADMIN, request.user.Role.SENIOR_OFFICER]:
+        messages.error(request, "Permission denied. Only Admins or Senior Officers can approve evidence.")
+        return redirect('evidence_detail', evidence_id=evidence.id)
+        
+    action = request.POST.get('action') # 'approve' or 'reject'
+    notes = request.POST.get('notes', '')
+    
+    if action == 'approve':
+        evidence.status = Evidence.Status.APPROVED
+        audit_action = 'EVIDENCE_APPROVED'
+        messages.success(request, f"Evidence {evidence.evidence_number} approved.")
+    elif action == 'reject':
+        evidence.status = Evidence.Status.REJECTED
+        audit_action = 'EVIDENCE_REJECTED'
+        messages.success(request, f"Evidence {evidence.evidence_number} rejected.")
+    else:
+        return redirect('evidence_detail', evidence_id=evidence.id)
+        
+    evidence.approved_by = request.user
+    evidence.approved_at = timezone.now()
+    evidence.approval_notes = notes
+    evidence.save()
+    
+    log_audit_event(request.user, audit_action, 'Evidence', evidence.id)
+    return redirect('evidence_detail', evidence_id=evidence.id)
