@@ -249,3 +249,20 @@ body {
     color: var(--law-text-muted);
     font-size: 0.875rem;
 }
+
+/* Button Micro-Animations */
+.btn {
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.15s ease;
+}
+.btn:active {
+    transform: scale(0.95);
+}
+
+/* Table Hover Effects */
+.table-hover tbody tr {
+    transition: background-color 0.15s ease, transform 0.15s ease;
+}
+.table-hover tbody tr:hover {
+    transform: translateX(4px);
+}
+
