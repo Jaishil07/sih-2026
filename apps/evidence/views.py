@@ -6,8 +6,9 @@ from django.contrib import messages
 from django.views.generic import ListView
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from django.db.models import Q
 
-from apps.cases.models import Case
+from apps.cases.models import Case, CaseMember
 from apps.evidence.models import Evidence, CustodyTransfer
 from apps.accounts.services import can_access_case, can_view_evidence
 from apps.audit.services import log_audit_event
@@ -21,9 +22,11 @@ class EvidenceListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == user.Role.ADMIN:
+        if user.role in [user.Role.ADMIN, user.Role.SENIOR_OFFICER]:
             return Evidence.objects.all().order_by('-created_at')
-        return Evidence.objects.filter(case__members__user=user).distinct().order_by('-created_at')
+        return Evidence.objects.filter(
+            Q(case__members__user=user) | Q(current_custodian=user)
+        ).distinct().order_by('-created_at')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -72,44 +75,72 @@ def evidence_create_view(request, case_id):
     return render(request, 'evidence/evidence_create.html', {'case': case})
 
 @login_required
+def transfer_custody_view(request, evidence_id):
+    """
+    Dedicated named endpoint for initiating custody transfers.
+    Validates permissions, creates a PENDING CustodyTransfer,
+    and notifies user cleanly.
+    """
+    if request.method != 'POST':
+        return redirect('evidence_detail', evidence_id=evidence_id)
+        
+    evidence = get_object_or_404(Evidence, id=evidence_id)
+    if not can_view_evidence(request.user, evidence):
+        raise PermissionDenied
+        
+    if evidence.case.status == 'CLOSED':
+        messages.error(request, "Cannot initiate custody transfers for a closed case.")
+        raise PermissionDenied
+        
+    # Only current custodian or ADMIN can initiate transfer
+    if request.user != evidence.current_custodian and request.user.role != request.user.Role.ADMIN:
+        messages.error(request, "Only the current custodian or an administrator can initiate a custody transfer.")
+        raise PermissionDenied
+        
+    to_user_id = request.POST.get('to_user')
+    reason = request.POST.get('reason', '').strip()
+    location = request.POST.get('location', '').strip()
+    
+    if not to_user_id:
+        messages.error(request, "Please select a recipient user for the custody transfer.")
+        return redirect('evidence_detail', evidence_id=evidence.id)
+        
+    to_user = get_object_or_404(User, id=to_user_id)
+    
+    CustodyTransfer.objects.create(
+        evidence=evidence,
+        from_user=evidence.current_custodian,
+        to_user=to_user,
+        reason=reason or "Custody Transfer",
+        location=location or "Transferred",
+        status=CustodyTransfer.Status.PENDING
+    )
+    
+    log_audit_event(request.user, 'CUSTODY_TRANSFER_INITIATED', 'Evidence', evidence.id)
+    messages.info(request, "Custody transfer initiated. Awaiting recipient acceptance.")
+    return redirect('evidence_detail', evidence_id=evidence.id)
+
+@login_required
 def evidence_detail_view(request, evidence_id):
     evidence = get_object_or_404(Evidence, id=evidence_id)
     if not can_view_evidence(request.user, evidence):
         raise PermissionDenied
         
     if request.method == 'POST':
-        if evidence.case.status == 'CLOSED':
-            messages.error(request, "Cannot initiate custody transfers for a closed case.")
-            raise PermissionDenied
-            
-        # Handling Custody Transfer form
-        to_user_id = request.POST.get('to_user')
-        reason = request.POST.get('reason')
-        location = request.POST.get('location')
+        # Delegate to transfer_custody_view for backward compatibility
+        return transfer_custody_view(request, evidence_id)
         
-        to_user = get_object_or_404(User, id=to_user_id)
-        
-        transfer = CustodyTransfer.objects.create(
-            evidence=evidence,
-            from_user=evidence.current_custodian,
-            to_user=to_user,
-            reason=reason,
-            location=location,
-            status=CustodyTransfer.Status.PENDING
-        )
-        # Note: We DO NOT update evidence.current_custodian here! It stays with sender.
-        
-        log_audit_event(request.user, 'CUSTODY_TRANSFER_INITIATED', 'Evidence', evidence.id)
-        messages.success(request, f"Custody transfer initiated to {to_user.username}. Awaiting their acceptance.")
-        return redirect('evidence_detail', evidence_id=evidence.id)
-        
-    users = User.objects.all()
+    users = User.objects.filter(is_active=True).exclude(id=evidence.current_custodian_id if evidence.current_custodian else None)
     transfers = evidence.transfers.all().order_by('-timestamp')
+    can_approve = request.user.role in [request.user.Role.ADMIN, request.user.Role.SENIOR_OFFICER]
+    can_transfer = (request.user == evidence.current_custodian or request.user.role == request.user.Role.ADMIN) and evidence.case.status != 'CLOSED'
     
     return render(request, 'evidence/evidence_detail.html', {
         'evidence': evidence,
         'transfers': transfers,
-        'users': users
+        'users': users,
+        'can_approve': can_approve,
+        'can_transfer': can_transfer
     })
 
 @login_required
@@ -119,10 +150,10 @@ def approve_evidence_view(request, evidence_id):
         
     evidence = get_object_or_404(Evidence, id=evidence_id)
     
-    # Check permissions: ADMIN, SENIOR_OFFICER, or Case Lead. Simplified: ADMIN or SENIOR_OFFICER.
+    # Check permissions: strictly ADMIN or SENIOR_OFFICER
     if request.user.role not in [request.user.Role.ADMIN, request.user.Role.SENIOR_OFFICER]:
         messages.error(request, "Permission denied. Only Admins or Senior Officers can approve evidence.")
-        return redirect('evidence_detail', evidence_id=evidence.id)
+        raise PermissionDenied
         
     action = request.POST.get('action') # 'approve' or 'reject'
     notes = request.POST.get('notes', '')
@@ -152,9 +183,8 @@ def accept_custody_transfer_view(request, transfer_id):
         return redirect('evidence_list')
         
     transfer = get_object_or_404(CustodyTransfer, id=transfer_id)
-    if request.user != transfer.to_user:
-        messages.error(request, "Permission denied. You are not the recipient of this transfer.")
-        return redirect('evidence_list')
+    if transfer.to_user != request.user:
+        raise PermissionDenied
         
     if transfer.status != CustodyTransfer.Status.PENDING:
         messages.error(request, "This transfer is no longer pending.")
@@ -168,8 +198,17 @@ def accept_custody_transfer_view(request, transfer_id):
     evidence.current_custodian = request.user
     evidence.save()
     
+    # If request.user is not already a CaseMember of evidence.case, automatically add them
+    if not evidence.case.members.filter(user=request.user).exists():
+        role_label = getattr(request.user, 'role', 'CUSTODIAN') or 'CUSTODIAN'
+        CaseMember.objects.create(
+            case=evidence.case,
+            user=request.user,
+            role=role_label
+        )
+    
     log_audit_event(request.user, 'CUSTODY_TRANSFER_ACCEPTED', 'Evidence', evidence.id)
-    messages.success(request, f"You have accepted custody of Evidence {evidence.evidence_number}.")
+    messages.success(request, f"Custody of {evidence.evidence_number} accepted.")
     return redirect('evidence_detail', evidence_id=evidence.id)
 
 @login_required
@@ -178,19 +217,18 @@ def reject_custody_transfer_view(request, transfer_id):
         return redirect('evidence_list')
         
     transfer = get_object_or_404(CustodyTransfer, id=transfer_id)
-    if request.user != transfer.to_user:
-        messages.error(request, "Permission denied. You are not the recipient of this transfer.")
-        return redirect('evidence_list')
+    if transfer.to_user != request.user:
+        raise PermissionDenied
         
     if transfer.status != CustodyTransfer.Status.PENDING:
         messages.error(request, "This transfer is no longer pending.")
         return redirect('evidence_detail', evidence_id=transfer.evidence.id)
         
-    reason = request.POST.get('rejection_reason', 'No reason provided.')
+    reason = request.POST.get('rejection_reason', '') or request.POST.get('reason', 'No reason provided.')
     transfer.status = CustodyTransfer.Status.REJECTED
     transfer.rejection_reason = reason
     transfer.save()
     
     log_audit_event(request.user, 'CUSTODY_TRANSFER_REJECTED', 'Evidence', transfer.evidence.id)
     messages.warning(request, f"You rejected the custody transfer of Evidence {transfer.evidence.evidence_number}.")
-    return redirect('evidence_detail', evidence_id=transfer.evidence.id)
+    return redirect('evidence_list')

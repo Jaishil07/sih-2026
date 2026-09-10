@@ -28,11 +28,11 @@
                         <tbody>
                             {% for transfer in pending_transfers %}
                             <tr>
-                                <td><a href="{% url 'evidence_detail' transfer.evidence.pk %}">{{ transfer.evidence.evidence_number }}</a></td>
+                                <td><a href="{% url 'evidence:evidence_detail' transfer.evidence.pk %}">{{ transfer.evidence.evidence_number }}</a></td>
                                 <td>{{ transfer.from_user.username }}</td>
                                 <td>{{ transfer.timestamp|date:"M d, Y H:i" }}</td>
                                 <td>
-                                    <form method="post" action="{% url 'accept_custody_transfer' transfer.id %}" class="d-inline">
+                                    <form method="post" action="{% url 'evidence:accept_custody_transfer' transfer.id %}" class="d-inline">
                                         {% csrf_token %}
                                         <button type="submit" class="btn btn-sm btn-success">Accept</button>
                                     </form>
@@ -47,7 +47,7 @@
                                             <h5 class="modal-title">Reject Transfer for {{ transfer.evidence.evidence_number }}</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
-                                        <form method="post" action="{% url 'reject_custody_transfer' transfer.id %}">
+                                        <form method="post" action="{% url 'evidence:reject_custody_transfer' transfer.id %}">
                                             {% csrf_token %}
                                             <div class="modal-body">
                                                 <div class="mb-3">
@@ -107,9 +107,9 @@
                                 </td>
                                 <td>{{ item.created_at|date:"M d, Y" }}</td>
                                 <td>
-                                    <a href="{% url 'evidence_detail' item.pk %}" class="btn btn-sm btn-outline-primary me-1">View</a>
+                                    <a href="{% url 'evidence:evidence_detail' item.pk %}" class="btn btn-sm btn-outline-primary me-1">View</a>
                                     {% if item.status == 'PENDING_APPROVAL' and user.role in 'ADMIN,SENIOR_OFFICER' %}
-                                    <a href="{% url 'evidence_detail' item.pk %}" class="btn btn-sm btn-warning text-dark">Review</a>
+                                    <a href="{% url 'evidence:evidence_detail' item.pk %}" class="btn btn-sm btn-warning text-dark">Review</a>
                                     {% endif %}
                                 </td>
                             </tr>

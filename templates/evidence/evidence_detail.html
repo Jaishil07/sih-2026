@@ -5,139 +5,220 @@
     <div class="col-12">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'evidence_list' %}">Evidence</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'evidence:evidence_list' %}">Evidence</a></li>
                 <li class="breadcrumb-item"><a href="{% url 'case_detail' evidence.case.pk %}">{{ evidence.case.case_number }}</a></li>
                 <li class="breadcrumb-item active" aria-current="page">{{ evidence.evidence_number }}</li>
             </ol>
         </nav>
-        <h2>{{ evidence.evidence_number }}</h2>
-        <div class="mt-2">
-            <span class="badge bg-secondary me-2">Registered: {{ evidence.created_at|date:"M d, Y" }}</span>
-            <span class="badge bg-primary me-2">Custodian: {{ evidence.current_custodian.username|default:"Unassigned" }}</span>
-            {% if evidence.status == 'APPROVED' %}
-            <span class="badge bg-success">Status: Approved</span>
-            {% elif evidence.status == 'REJECTED' %}
-            <span class="badge bg-danger">Status: Rejected</span>
-            {% else %}
-            <span class="badge bg-warning text-dark">Status: Pending Approval</span>
-            {% endif %}
+        <div class="d-flex flex-wrap justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold mb-1"><i class="bi bi-box-seam text-primary me-2"></i>{{ evidence.evidence_number }}</h2>
+                <div class="small text-muted">Registered for Case <a href="{% url 'case_detail' evidence.case.pk %}" class="fw-medium text-decoration-none">{{ evidence.case.case_number }} - {{ evidence.case.title }}</a></div>
+            </div>
+            <div class="mt-2 mt-md-0">
+                {% if evidence.status == 'APPROVED' %}
+                <span class="badge bg-emerald rounded-pill px-3 py-2"><i class="bi bi-check-circle me-1"></i>Approved</span>
+                {% elif evidence.status == 'REJECTED' %}
+                <span class="badge bg-crimson rounded-pill px-3 py-2"><i class="bi bi-x-circle me-1"></i>Rejected</span>
+                {% else %}
+                <span class="badge bg-amber text-dark rounded-pill px-3 py-2"><i class="bi bi-hourglass-split me-1"></i>Pending Approval</span>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
 
 <div class="row">
-    <!-- Details and Transfer Action -->
-    <div class="col-md-5 mb-4">
-        {% if evidence.status == 'PENDING_APPROVAL' and user.role in 'ADMIN,SENIOR_OFFICER' %}
-        <div class="card shadow-sm border-0 mb-4 border-warning">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="card-title mb-0">Approval Review</h5>
-            </div>
-            <div class="card-body">
-                <form method="post" action="{% url 'approve_evidence' evidence.id %}">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label class="form-label">Review Notes</label>
-                        <textarea name="notes" class="form-control" rows="2" placeholder="Optional notes for approval/rejection"></textarea>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <button type="submit" name="action" value="reject" class="btn btn-outline-danger">Reject</button>
-                        <button type="submit" name="action" value="approve" class="btn btn-success">Approve Evidence</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        {% elif evidence.status != 'PENDING_APPROVAL' %}
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-body py-2 px-3 small bg-light rounded">
-                <strong>{{ evidence.get_status_display }}</strong> by {{ evidence.approved_by.username|default:"Unknown" }} on {{ evidence.approved_at|date:"M d, Y H:i" }}<br>
-                {% if evidence.approval_notes %}<em>"{{ evidence.approval_notes }}"</em>{% endif %}
-            </div>
-        </div>
-        {% endif %}
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white">
-                <h5 class="card-title mb-0">Details</h5>
-            </div>
-            <div class="card-body">
-                <p>{{ evidence.description }}</p>
-            </div>
-        </div>
+    <!-- Left Column: Item Metadata, Approval Status, Custody Transfer -->
+    <div class="col-lg-5 mb-4">
         
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white">
-                <h5 class="card-title mb-0">Transfer Custody</h5>
+        <!-- Card 1: Item Metadata -->
+        <div class="card shadow-sm border-0 mb-4 border-left-indigo">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 fw-bold"><i class="bi bi-info-circle me-2 text-primary"></i>Item Metadata</h5>
             </div>
             <div class="card-body">
-                <form method="post">
+                <div class="mb-3">
+                    <div class="small text-muted text-uppercase fw-semibold">Evidence Number</div>
+                    <div class="fw-bold fs-6">{{ evidence.evidence_number }}</div>
+                </div>
+                <div class="mb-3">
+                    <div class="small text-muted text-uppercase fw-semibold">Current Custodian</div>
+                    <div class="d-flex align-items-center mt-1">
+                        <span class="badge bg-primary rounded-pill px-3 py-2 fs-6 fw-normal">
+                            <i class="bi bi-person-badge me-1"></i>{{ evidence.current_custodian.username|default:"Unassigned" }}
+                        </span>
+                        {% if evidence.current_custodian.designation %}
+                        <span class="text-muted small ms-2">({{ evidence.current_custodian.designation }})</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="small text-muted text-uppercase fw-semibold">Registration Date</div>
+                    <div class="text-dark">{{ evidence.created_at|date:"M d, Y H:i" }}</div>
+                </div>
+                <div class="mb-0">
+                    <div class="small text-muted text-uppercase fw-semibold">Description</div>
+                    <p class="text-dark mt-1 mb-0 lh-base">{{ evidence.description|default:"No description provided." }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Approval Status -->
+        <div class="card shadow-sm border-0 mb-4 {% if evidence.status == 'PENDING_APPROVAL' %}border-left-amber{% elif evidence.status == 'APPROVED' %}border-left-emerald{% else %}border-left-crimson{% endif %}">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 fw-bold"><i class="bi bi-shield-check me-2 text-primary"></i>Approval Status</h5>
+            </div>
+            <div class="card-body">
+                {% if evidence.status == 'PENDING_APPROVAL' %}
+                    {% if can_approve %}
+                    <div class="alert alert-warning py-2 mb-3 small d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                        <div>Action Required: This evidence item requires formal supervisory review.</div>
+                    </div>
+                    <form method="post" action="{% url 'evidence:approve_evidence' evidence.id %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Supervisor Review Notes</label>
+                            <textarea name="notes" class="form-control" rows="2" placeholder="Provide optional notes or findings..."></textarea>
+                        </div>
+                        <div class="d-flex justify-content-between gap-2">
+                            <button type="submit" name="action" value="reject" class="btn btn-outline-danger btn-sm px-3">
+                                <i class="bi bi-x-lg me-1"></i>Reject
+                            </button>
+                            <button type="submit" name="action" value="approve" class="btn btn-success btn-sm px-3">
+                                <i class="bi bi-check-lg me-1"></i>Approve Evidence
+                            </button>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="text-muted small">
+                        <i class="bi bi-hourglass-split me-1 text-warning"></i>Pending review and approval by an Admin or Senior Officer.
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="small mb-2">
+                        <strong>Decision:</strong> 
+                        {% if evidence.status == 'APPROVED' %}
+                        <span class="text-success fw-bold">Approved</span>
+                        {% else %}
+                        <span class="text-danger fw-bold">Rejected</span>
+                        {% endif %}
+                        by {{ evidence.approved_by.username|default:"System" }} on {{ evidence.approved_at|date:"M d, Y H:i" }}
+                    </div>
+                    {% if evidence.approval_notes %}
+                    <div class="p-2 bg-light rounded small border">
+                        <span class="text-muted">Notes:</span> <em>"{{ evidence.approval_notes }}"</em>
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Card 3: Initiate Custody Transfer -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h5 class="card-title mb-0 fw-bold"><i class="bi bi-arrow-left-right me-2 text-primary"></i>Initiate Custody Transfer</h5>
+            </div>
+            <div class="card-body">
+                {% if can_transfer %}
+                <form method="post" action="{% url 'evidence:transfer_custody' evidence.id %}">
                     {% csrf_token %}
                     
                     <div class="mb-3">
-                        <label class="form-label">Transfer To (User)</label>
+                        <label class="form-label small fw-semibold">Transfer Recipient (New Custodian)</label>
                         <select name="to_user" class="form-select" required>
-                            <option value="">-- Select New Custodian --</option>
+                            <option value="">-- Select Recipient --</option>
                             {% for u in users %}
-                            {% if u.id != evidence.current_custodian.id %}
-                            <option value="{{ u.id }}">{{ u.username }} ({{ u.get_role_display }})</option>
-                            {% endif %}
+                            <option value="{{ u.id }}">{{ u.username }} ({{ u.get_role_display }}{% if u.designation %}, {{ u.designation }}{% endif %})</option>
                             {% endfor %}
                         </select>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Reason</label>
-                        <input type="text" name="reason" class="form-control" required placeholder="e.g. Lab Analysis">
+                        <label class="form-label small fw-semibold">Transfer Reason</label>
+                        <input type="text" name="reason" class="form-control" required placeholder="e.g. Forensic Lab Analysis, Court Hearing, Safe Storage">
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Location</label>
-                        <input type="text" name="location" class="form-control" required placeholder="e.g. Forensic Lab 2">
+                        <label class="form-label small fw-semibold">Destination / Physical Location</label>
+                        <input type="text" name="location" class="form-control" required placeholder="e.g. Cyber Forensic Unit 3, Evidence Locker B">
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100">Initiate Transfer</button>
+                    <button type="submit" class="btn btn-primary w-100 shadow-sm">
+                        <i class="bi bi-send me-1"></i>Initiate Transfer
+                    </button>
                 </form>
+                {% else %}
+                <div class="text-muted small">
+                    {% if evidence.case.status == 'CLOSED' %}
+                    <i class="bi bi-lock me-1"></i>Custody transfers are disabled because this case is closed.
+                    {% else %}
+                    <i class="bi bi-info-circle me-1"></i>Only the current custodian (<strong>{{ evidence.current_custodian.username }}</strong>) or a system administrator can initiate a custody transfer.
+                    {% endif %}
+                </div>
+                {% endif %}
             </div>
         </div>
+
     </div>
     
-    <!-- Custody Timeline -->
-    <div class="col-md-7 mb-4">
+    <!-- Right Column: Card 4: Chain of Custody Timeline -->
+    <div class="col-lg-7 mb-4">
         <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-white">
-                <h5 class="card-title mb-0">Chain of Custody Timeline</h5>
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 fw-bold"><i class="bi bi-clock-history me-2 text-primary"></i>Chain of Custody Timeline</h5>
+                <span class="badge bg-secondary rounded-pill">{{ transfers|length }} event{{ transfers|length|pluralize }}</span>
             </div>
             <div class="card-body">
                 <div class="timeline">
                     {% for transfer in transfers %}
                     <div class="timeline-item pb-4 border-start ms-3 ps-4 position-relative">
                         {% if transfer.status == 'PENDING' %}
-                        <span class="position-absolute top-0 start-0 translate-middle p-2 bg-warning border border-light rounded-circle" title="Pending Acceptance"></span>
+                        <span class="position-absolute top-0 start-0 translate-middle p-2 bg-amber border border-light rounded-circle shadow-sm" title="Pending Acceptance"></span>
                         {% elif transfer.status == 'REJECTED' %}
-                        <span class="position-absolute top-0 start-0 translate-middle p-2 bg-danger border border-light rounded-circle" title="Rejected"></span>
+                        <span class="position-absolute top-0 start-0 translate-middle p-2 bg-crimson border border-light rounded-circle shadow-sm" title="Rejected"></span>
                         {% else %}
-                        <span class="position-absolute top-0 start-0 translate-middle p-2 bg-success border border-light rounded-circle" title="Accepted"></span>
+                        <span class="position-absolute top-0 start-0 translate-middle p-2 bg-emerald border border-light rounded-circle shadow-sm" title="Accepted"></span>
                         {% endif %}
-                        <div class="mb-1">
-                            <span class="fw-bold">{{ transfer.to_user.username|default:"System" }}</span> 
-                            {% if transfer.status == 'PENDING' %} is pending receipt from {% elif transfer.status == 'REJECTED' %} rejected transfer from {% else %} received from {% endif %}
-                            <span class="text-muted">{{ transfer.from_user.username|default:"Field/Unknown" }}</span>
+                        
+                        <div class="d-flex flex-wrap justify-content-between align-items-start mb-1">
+                            <div>
+                                <span class="fw-bold text-dark">{{ transfer.to_user.username|default:"System" }}</span> 
+                                {% if transfer.status == 'PENDING' %}
+                                <span class="badge bg-amber text-dark rounded-pill px-2 ms-1">Pending Acceptance</span>
+                                <div class="small text-muted mt-1">Awaiting acceptance from {{ transfer.from_user.username|default:"Field/Unknown" }}</div>
+                                {% elif transfer.status == 'REJECTED' %}
+                                <span class="badge bg-crimson rounded-pill px-2 ms-1">Rejected</span>
+                                <div class="small text-muted mt-1">Rejected handover from {{ transfer.from_user.username|default:"Field/Unknown" }}</div>
+                                {% else %}
+                                <span class="badge bg-emerald rounded-pill px-2 ms-1">Accepted</span>
+                                <div class="small text-muted mt-1">Received from {{ transfer.from_user.username|default:"Field/Unknown" }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="small text-muted text-end">
+                                <div>Initiated: {{ transfer.timestamp|date:"M d, Y H:i:s" }}</div>
+                                {% if transfer.accepted_at %}
+                                <div class="text-success"><i class="bi bi-check2 me-1"></i>Accepted: {{ transfer.accepted_at|date:"M d, Y H:i:s" }}</div>
+                                {% endif %}
+                            </div>
                         </div>
-                        <div class="small text-muted mb-2">
-                            Initiated: {{ transfer.timestamp|date:"M d, Y H:i:s" }}
-                            {% if transfer.accepted_at %}<br>Accepted: {{ transfer.accepted_at|date:"M d, Y H:i:s" }}{% endif %}
-                        </div>
-                        <div class="card bg-light border-0">
+
+                        <div class="card bg-light border-0 mt-2">
                             <div class="card-body py-2 px-3 small">
                                 <div><strong>Reason:</strong> {{ transfer.reason }}</div>
                                 <div><strong>Location:</strong> {{ transfer.location|default:"Not specified" }}</div>
-                                {% if transfer.status == 'REJECTED' %}
+                                {% if transfer.status == 'REJECTED' and transfer.rejection_reason %}
                                 <div class="text-danger mt-1"><strong>Rejection Reason:</strong> {{ transfer.rejection_reason }}</div>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
                     {% empty %}
-                    <div class="text-muted text-center py-4">No custody history found.</div>
+                    <div class="text-muted text-center py-5">
+                        <i class="bi bi-journal-x fs-1 d-block mb-2 text-secondary"></i>
+                        No custody history recorded yet.
+                    </div>
                     {% endfor %}
                 </div>
             </div>
