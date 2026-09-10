@@ -1,78 +1,453 @@
-{% extends 'base.html' %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Suraksha Docs – Secure Investigation Portal Login">
+    <title>Authenticate | Suraksha Docs – National Secure Investigation Repository</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
 
-{% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow-sm">
-            <div class="card-body p-4">
-                <div class="text-center mb-4">
-                    <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-circle bg-primary-subtle text-primary mb-3">
-                        <i class="bi bi-shield-shaded fs-2"></i>
-                    </div>
-                    <h3 class="card-title fw-bold mb-1">Suraksha Docs</h3>
-                    <p class="text-muted small mb-0">Suraksha Docs - Secure Legal &amp; Investigation Document Repository</p>
-                </div>
-                
-                {% if form.errors %}
-                <div class="alert alert-danger" role="alert">
-                    {% if form.non_field_errors %}
-                        {{ form.non_field_errors }}
-                    {% else %}
-                        Please correct the errors below.
-                    {% endif %}
-                </div>
-                {% endif %}
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+            background: #090d16;
+        }
 
-                <form method="post" action="{% url 'login' %}">
-                    {% csrf_token %}
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.username.id_for_label }}" class="form-label">Username / Employee ID</label>
-                        {{ form.username }}
-                        {% if form.username.errors %}
-                        <div class="invalid-feedback d-block">{{ form.username.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
-                        {{ form.password }}
-                        {% if form.password.errors %}
-                        <div class="invalid-feedback d-block">{{ form.password.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <input type="hidden" name="next" value="{{ next|default:'' }}">
-                    
-                    <div class="d-grid gap-2 mt-4">
-                        <button type="submit" class="btn btn-primary">Sign in</button>
-                    </div>
-                </form>
+        /* ── Left Branding Panel ───────────────────────────────────────────── */
+        .login-brand {
+            width: 45%;
+            min-height: 100vh;
+            background: linear-gradient(155deg, #0f172a 0%, #1e1b4b 45%, #0f2d4a 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 3.5rem;
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        /* decorative grid overlay */
+        .login-brand::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(79, 70, 229, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(79, 70, 229, 0.06) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
+
+        /* radial accent glow */
+        .login-brand::after {
+            content: '';
+            position: absolute;
+            top: -20%;
+            left: -20%;
+            width: 80%;
+            height: 80%;
+            background: radial-gradient(ellipse at center, rgba(79, 70, 229, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .brand-content { position: relative; z-index: 1; width: 100%; max-width: 400px; }
+
+        .shield-glow {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.25), rgba(59, 130, 246, 0.15));
+            border: 1px solid rgba(79, 70, 229, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.75rem;
+            box-shadow: 0 0 40px rgba(79, 70, 229, 0.3), 0 0 80px rgba(79, 70, 229, 0.1);
+            backdrop-filter: blur(10px);
+            animation: shieldPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes shieldPulse {
+            0%, 100% { box-shadow: 0 0 40px rgba(79, 70, 229, 0.3), 0 0 80px rgba(79, 70, 229, 0.1); }
+            50%       { box-shadow: 0 0 60px rgba(79, 70, 229, 0.5), 0 0 120px rgba(79, 70, 229, 0.2); }
+        }
+
+        .brand-title {
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: #ffffff;
+            line-height: 1.15;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.5rem;
+        }
+
+        .brand-subtitle {
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #4f46e5;
+            margin-bottom: 1.25rem;
+        }
+
+        .brand-desc {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            line-height: 1.65;
+            margin-bottom: 2.5rem;
+        }
+
+        .feature-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 999px;
+            padding: 0.35rem 0.85rem;
+            font-size: 0.75rem;
+            color: #cbd5e1;
+            margin: 0.2rem;
+            backdrop-filter: blur(8px);
+        }
+
+        .feature-pill i { color: #3b82f6; font-size: 0.85rem; }
+
+        .brand-badge {
+            display: inline-block;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #10b981;
+            border-radius: 999px;
+            padding: 0.3rem 1rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+        }
+
+        /* ── Right Auth Panel ──────────────────────────────────────────────── */
+        .login-auth {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: #090d16;
+            overflow-y: auto;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 420px;
+            background: rgba(17, 24, 39, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 20px;
+            padding: 2.5rem 2.5rem 2rem;
+            backdrop-filter: blur(20px);
+            box-shadow:
+                0 0 0 1px rgba(79, 70, 229, 0.1),
+                0 25px 60px -15px rgba(0, 0, 0, 0.8),
+                0 0 80px rgba(79, 70, 229, 0.05);
+        }
+
+        .auth-card-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .auth-card-header h1 {
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: #f3f4f6;
+            margin-bottom: 0.4rem;
+        }
+
+        .auth-card-header p {
+            font-size: 0.82rem;
+            color: #6b7280;
+        }
+
+        /* Input Groups */
+        .auth-input-group {
+            position: relative;
+            margin-bottom: 1.1rem;
+        }
+
+        .auth-input-group .input-icon {
+            position: absolute;
+            left: 0.9rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #4f46e5;
+            font-size: 1rem;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .auth-input-group input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 0.75rem 0.9rem 0.75rem 2.6rem;
+            font-size: 0.9rem;
+            color: #f3f4f6;
+            font-family: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+            outline: none;
+        }
+
+        .auth-input-group input::placeholder { color: #4b5563; }
+
+        .auth-input-group input:focus {
+            border-color: #4f46e5;
+            background: rgba(79, 70, 229, 0.06);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
+
+        .auth-input-group label {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #6b7280;
+            margin-bottom: 0.4rem;
+        }
+
+        /* Submit Button */
+        .btn-auth {
+            width: 100%;
+            background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 0.85rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 0.02em;
+            box-shadow: 0 4px 20px rgba(79, 70, 229, 0.4);
+            margin-top: 0.5rem;
+        }
+
+        .btn-auth:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(79, 70, 229, 0.55);
+        }
+
+        .btn-auth:active { transform: scale(0.97); }
+
+        /* Error Alert */
+        .auth-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            color: #fca5a5;
+            font-size: 0.82rem;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Demo Credentials Pill-Box */
+        .demo-box {
+            width: 100%;
+            max-width: 420px;
+            margin-top: 1.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 1.1rem 1.25rem;
+        }
+
+        .demo-box-title {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #4b5563;
+            margin-bottom: 0.8rem;
+        }
+
+        .demo-pills { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem; }
+
+        .demo-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            border-radius: 999px;
+            padding: 0.3rem 0.7rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.15s;
+            user-select: none;
+        }
+
+        .demo-pill.admin    { background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(109,40,217,0.2)); border-color: rgba(139,92,246,0.35); color: #c4b5fd; }
+        .demo-pill.officer  { background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(4,120,87,0.2));  border-color: rgba(16,185,129,0.35);  color: #6ee7b7; }
+        .demo-pill.senior   { background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(29,78,216,0.2)); border-color: rgba(59,130,246,0.35);  color: #93c5fd; }
+        .demo-pill.judge    { background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(180,83,9,0.2));  border-color: rgba(245,158,11,0.35);  color: #fcd34d; }
+
+        .demo-pill:hover { transform: scale(1.04); }
+
+        .demo-password {
+            font-size: 0.72rem;
+            color: #4b5563;
+            font-family: monospace;
+        }
+
+        .demo-password strong { color: #6b7280; }
+
+        /* Responsive mobile stack */
+        @media (max-width: 767px) {
+            body { flex-direction: column; overflow: auto; }
+            .login-brand {
+                width: 100%;
+                min-height: auto;
+                padding: 2.5rem 2rem;
+            }
+            .brand-title { font-size: 1.8rem; }
+            .login-auth { min-height: auto; padding: 2rem 1.25rem 3rem; }
+            .auth-card { padding: 1.75rem 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ── Left Branding Panel ───────────────────────────────────── -->
+    <div class="login-brand">
+        <div class="brand-content">
+            <div class="shield-glow">
+                <i class="bi bi-shield-shaded" style="font-size: 2.5rem; color: #818cf8;"></i>
+            </div>
+
+            <div class="brand-badge"><i class="bi bi-circle-fill me-1" style="font-size: 0.45rem;"></i>Classified System – Authorised Access Only</div>
+
+            <div class="brand-title">Suraksha<br>Docs</div>
+            <div class="brand-subtitle">National Secure Investigation Repository</div>
+            <p class="brand-desc">
+                A unified, cryptographically-secured document and evidence management platform for law enforcement, forensic labs, prosecutors, and the judiciary. Every record is immutably hashed and blockchain-anchored.
+            </p>
+
+            <div>
+                <span class="feature-pill"><i class="bi bi-shield-lock-fill"></i> SHA-256 File Integrity</span>
+                <span class="feature-pill"><i class="bi bi-link-45deg"></i> Blockchain Anchoring</span>
+                <span class="feature-pill"><i class="bi bi-eye-fill"></i> Full Audit Trail</span>
+                <span class="feature-pill"><i class="bi bi-people-fill"></i> Granular RBAC</span>
+                <span class="feature-pill"><i class="bi bi-robot"></i> AI Intelligence</span>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Add some quick styling for form inputs to match bootstrap -->
-<style>
-    #id_username, #id_password {
-        display: block;
-        width: 100%;
-        padding: .375rem .75rem;
-        font-size: 1rem;
-        font-weight: 400;
-        line-height: 1.5;
-        color: var(--bs-body-color);
-        background-color: var(--bs-body-bg);
-        background-clip: padding-box;
-        border: var(--bs-border-width) solid var(--bs-border-color);
-        border-radius: var(--bs-border-radius);
-        transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
-    }
-    #id_username:focus, #id_password:focus {
-        border-color: #86b7fe;
-        outline: 0;
-        box-shadow: 0 0 0 .25rem rgba(13,110,253,.25);
-    }
-</style>
-{% endblock %}
+    <!-- ── Right Auth Panel ──────────────────────────────────────── -->
+    <div class="login-auth">
+
+        <div class="auth-card">
+            <div class="auth-card-header">
+                <h1>Authenticate &amp; Access Portal</h1>
+                <p>Enter your credentials to enter the secure investigation workspace.</p>
+            </div>
+
+            {% if form.errors %}
+            <div class="auth-error">
+                <i class="bi bi-exclamation-octagon-fill" style="font-size: 1rem; flex-shrink: 0;"></i>
+                <div>
+                    {% if form.non_field_errors %}
+                        {{ form.non_field_errors.0 }}
+                    {% else %}
+                        Invalid credentials. Please check your username and password.
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <form method="post" action="{% url 'login' %}" autocomplete="off">
+                {% csrf_token %}
+
+                <div class="auth-input-group">
+                    <label for="{{ form.username.id_for_label }}">Username / Employee ID</label>
+                    <i class="bi bi-person-fill input-icon"></i>
+                    <input type="text"
+                           id="{{ form.username.id_for_label }}"
+                           name="username"
+                           placeholder="Enter your username"
+                           value="{{ form.username.value|default:'' }}"
+                           autocomplete="username"
+                           required>
+                </div>
+
+                <div class="auth-input-group">
+                    <label for="{{ form.password.id_for_label }}">Password</label>
+                    <i class="bi bi-shield-lock-fill input-icon"></i>
+                    <input type="password"
+                           id="{{ form.password.id_for_label }}"
+                           name="password"
+                           placeholder="Enter your password"
+                           autocomplete="current-password"
+                           required>
+                </div>
+
+                <input type="hidden" name="next" value="{{ next|default:'' }}">
+
+                <button type="submit" class="btn-auth">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Authenticate &amp; Access Portal
+                </button>
+            </form>
+        </div>
+
+        <!-- Demo credentials -->
+        <div class="demo-box">
+            <div class="demo-box-title"><i class="bi bi-info-circle me-1"></i>Demo Credentials – Jury Preview</div>
+            <div class="demo-pills">
+                <span class="demo-pill admin" onclick="fillCreds('admin')" title="Click to fill">
+                    <i class="bi bi-person-badge-fill"></i> admin <small style="opacity:0.7;">(Admin)</small>
+                </span>
+                <span class="demo-pill officer" onclick="fillCreds('officer_a')" title="Click to fill">
+                    <i class="bi bi-person-fill"></i> officer_a <small style="opacity:0.7;">(Investigator)</small>
+                </span>
+                <span class="demo-pill senior" onclick="fillCreds('senior_officer')" title="Click to fill">
+                    <i class="bi bi-person-check-fill"></i> senior_officer <small style="opacity:0.7;">(Supervisor)</small>
+                </span>
+                <span class="demo-pill judge" onclick="fillCreds('judge')" title="Click to fill">
+                    <i class="bi bi-bank2"></i> judge <small style="opacity:0.7;">(Judiciary)</small>
+                </span>
+            </div>
+            <div class="demo-password"><strong>Password for all demo accounts:</strong> DemoPass@2026 &nbsp;·&nbsp; Click any pill to auto-fill.</div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function fillCreds(username) {
+            var usernameInput = document.getElementById('id_username');
+            var passwordInput = document.getElementById('id_password');
+            if (usernameInput) usernameInput.value = username;
+            if (passwordInput) passwordInput.value = 'DemoPass@2026';
+            if (passwordInput) passwordInput.focus();
+        }
+    </script>
+</body>
+</html>

@@ -92,3 +92,41 @@ class DocumentViewTests(TestCase):
         # Download file
         response = self.client.get(reverse('document_download', args=[self.version.id]))
         self.assertEqual(response.status_code, 403)
+
+
+@override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT)
+class DocumentRBACTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(username="admin", role=User.Role.ADMIN, password="password")
+        self.senior = User.objects.create_user(username="senior", role=User.Role.SENIOR_OFFICER, password="password")
+        self.investigator = User.objects.create_user(username="investigator", role=User.Role.INVESTIGATING_OFFICER, password="password")
+        self.court_user = User.objects.create_user(username="court", role=User.Role.COURT_USER, password="password")
+        
+        self.case = Case.objects.create(case_number="CR-RBAC", title="RBAC Case", created_by=self.admin)
+        CaseMember.objects.create(case=self.case, user=self.senior, role="Supervisor")
+        CaseMember.objects.create(case=self.case, user=self.investigator, role="Investigator")
+        CaseMember.objects.create(case=self.case, user=self.court_user, role="Judge")
+        
+        self.document = Document.objects.create(case=self.case, title="Evidence 1", created_by=self.admin)
+        
+    def test_investigating_officer_can_upload(self):
+        self.client.login(username="investigator", password="password")
+        response = self.client.get(reverse('document_upload', args=[self.case.id]))
+        self.assertEqual(response.status_code, 200)
+        
+    def test_investigating_officer_cannot_delete(self):
+        self.client.login(username="investigator", password="password")
+        response = self.client.post(reverse('document_delete', args=[self.document.id]))
+        self.assertEqual(response.status_code, 403)
+        
+    def test_senior_officer_can_delete(self):
+        self.client.login(username="senior", password="password")
+        response = self.client.post(reverse('document_delete', args=[self.document.id]))
+        self.assertEqual(response.status_code, 302)  # Redirects after successful deletion
+        self.document.refresh_from_db()
+        self.assertEqual(self.document.status, 'ARCHIVED')
+        
+    def test_court_user_cannot_upload(self):
+        self.client.login(username="court", password="password")
+        response = self.client.get(reverse('document_upload', args=[self.case.id]))
+        self.assertEqual(response.status_code, 403)

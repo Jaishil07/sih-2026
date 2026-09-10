@@ -11,10 +11,20 @@
             </ol>
         </nav>
         <div class="d-flex justify-content-between align-items-center">
-            <h2 class="mb-0 fw-bold"><i class="bi bi-file-earmark-text text-indigo me-2"></i>{{ document.title }}</h2>
-            <button type="button" class="btn btn-outline-indigo bg-white shadow-sm" data-bs-toggle="collapse" data-bs-target="#uploadVersionCollapse">
-                <i class="bi bi-upload me-1"></i> Upload New Version
-            </button>
+            <h2 class="mb-0 fw-bold {% if document.status == 'ARCHIVED' %}text-decoration-line-through text-muted{% endif %}"><i class="bi bi-file-earmark-text text-indigo me-2"></i>{{ document.title }}</h2>
+            <div class="d-flex gap-2">
+                {% if request.user.role in 'ADMIN,SENIOR_OFFICER' %}
+                <form method="post" action="{% url 'document_delete' document.pk %}" class="d-inline" onsubmit="return confirm('Are you sure you want to archive this document?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger bg-white shadow-sm">
+                        <i class="bi bi-archive-fill me-1"></i> Archive
+                    </button>
+                </form>
+                {% endif %}
+                <button type="button" class="btn btn-outline-indigo bg-white shadow-sm" data-bs-toggle="collapse" data-bs-target="#uploadVersionCollapse">
+                    <i class="bi bi-upload me-1"></i> Upload New Version
+                </button>
+            </div>
         </div>
         <div class="mt-3">
             <span class="badge bg-secondary me-2 px-3 py-2 border"><i class="bi bi-tag me-1"></i>{{ document.document_type }}</span>
@@ -25,6 +35,11 @@
                 {% else %}bg-indigo{% endif %} me-3 px-3 py-2 shadow-sm">
                 <i class="bi bi-shield-lock me-1"></i>{{ document.classification }}
             </span>
+            {% if document.status == 'ARCHIVED' %}
+            <span class="badge bg-crimson me-3 px-3 py-2 shadow-sm border border-light">
+                <i class="bi bi-archive-fill me-1"></i>ARCHIVED
+            </span>
+            {% endif %}
             <span class="text-muted small"><i class="bi bi-person me-1"></i>Uploaded by {{ document.created_by.username }}</span>
         </div>
     </div>

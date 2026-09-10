@@ -49,9 +49,11 @@
                             </form>
                             {% endif %}
                         {% else %}
+                            {% if request.user.role in 'ADMIN,SENIOR_OFFICER,INVESTIGATING_OFFICER' %}
                             <a href="{% url 'document_upload' case.id %}" class="btn btn-indigo shadow-sm"><i class="bi bi-cloud-upload me-1"></i>Upload Document</a>
+                            {% endif %}
                             <a href="{% url 'evidence_create' case.id %}" class="btn btn-outline-indigo bg-white shadow-sm"><i class="bi bi-upc-scan me-1"></i>Register Evidence</a>
-                            {% if request.user.role == 'ADMIN' or request.user.role == 'SENIOR_OFFICER' %}
+                            {% if request.user.role in 'ADMIN,SENIOR_OFFICER' %}
                             <form method="post" action="{% url 'case_close' case.id %}" class="d-inline" onsubmit="return confirm('Are you sure you want to close this case? This locks all modifications.');">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-danger shadow-sm"><i class="bi bi-lock-fill me-1"></i>Close Case</button>
@@ -116,8 +118,11 @@
                         </thead>
                         <tbody>
                             {% for doc in documents %}
-                            <tr>
-                                <td class="ps-4 fw-semibold">{{ doc.title }}</td>
+                            <tr class="{% if doc.status == 'ARCHIVED' %}text-muted opacity-50{% endif %}">
+                                <td class="ps-4 fw-semibold {% if doc.status == 'ARCHIVED' %}text-decoration-line-through{% endif %}">
+                                    {{ doc.title }}
+                                    {% if doc.status == 'ARCHIVED' %}<span class="badge bg-crimson ms-2 small">ARCHIVED</span>{% endif %}
+                                </td>
                                 <td><span class="badge bg-light text-dark border">{{ doc.get_document_type_display|default:doc.document_type }}</span></td>
                                 {% with last_version=doc.versions.first %}
                                 <td><span class="badge bg-indigo rounded-pill px-3">v{{ last_version.version_number|default:"?" }}</span></td>
@@ -255,7 +260,7 @@
 
     <!-- Team Tab -->
     <div class="tab-pane fade" id="team" role="tabpanel">
-        {% if user.role == 'ADMIN' or user.role == 'SENIOR_OFFICER' %}
+        {% if request.user.role in 'ADMIN,SENIOR_OFFICER' %}
         <div class="d-flex justify-content-end mb-4">
             <button type="button" class="btn btn-indigo shadow-sm" data-bs-toggle="modal" data-bs-target="#addMemberModal">
                 <i class="bi bi-person-plus-fill me-1"></i> Assign Officer

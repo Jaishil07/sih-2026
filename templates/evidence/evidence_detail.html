@@ -71,7 +71,7 @@
             </div>
             <div class="card-body">
                 {% if evidence.status == 'PENDING_APPROVAL' %}
-                    {% if can_approve %}
+                    {% if can_approve or request.user.role in 'ADMIN,SENIOR_OFFICER' %}
                     <div class="alert alert-warning py-2 mb-3 small d-flex align-items-center">
                         <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
                         <div>Action Required: This evidence item requires formal supervisory review.</div>

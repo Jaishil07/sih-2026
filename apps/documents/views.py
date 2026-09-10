@@ -10,7 +10,7 @@ from apps.cases.models import Case
 from apps.documents.models import Document, DocumentVersion
 from apps.documents.forms import DocumentUploadForm, DocumentVersionUploadForm
 from apps.documents.services import create_document_version, verify_document_version_integrity
-from apps.accounts.services import can_access_case, can_view_document
+from apps.accounts.services import can_access_case, can_view_document, can_upload_document, can_delete_document
 from apps.audit.services import log_audit_event
 
 
@@ -22,14 +22,14 @@ class DocumentListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         user = self.request.user
         if user.role == user.Role.ADMIN:
-            return Document.objects.all().order_by('-created_at')
-        return Document.objects.filter(case__members__user=user).distinct().order_by('-created_at')
+            return Document.objects.exclude(status='ARCHIVED').order_by('-created_at')
+        return Document.objects.filter(case__members__user=user).exclude(status='ARCHIVED').distinct().order_by('-created_at')
 
 
 @login_required
 def document_upload_view(request, case_id):
     case = get_object_or_404(Case, id=case_id)
-    if not can_access_case(request.user, case):
+    if not can_upload_document(request.user, case):
         raise PermissionDenied
         
     if case.status == 'CLOSED':
@@ -143,3 +143,22 @@ def document_download_view(request, version_id):
     response = FileResponse(version.file.open('rb'))
     response['Content-Disposition'] = f'attachment; filename="{version.file.name.split("/")[-1]}"'
     return response
+
+
+@login_required
+def document_delete_view(request, pk):
+    document = get_object_or_404(Document, pk=pk)
+    
+    if not can_delete_document(request.user, document):
+        raise PermissionDenied
+        
+    if request.method == 'POST':
+        document.status = 'ARCHIVED'
+        document.save()
+        log_audit_event(request.user, 'DOCUMENT_ARCHIVED', 'Document', document.id)
+        messages.success(request, f"Document '{document.title}' has been archived.")
+        return redirect('case_detail', pk=document.case.id)
+        
+    # GET method is not supported for delete/archive to prevent accidental/CSRF deletions.
+    return redirect('document_detail', pk=document.id)
+

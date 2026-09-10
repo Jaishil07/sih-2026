@@ -15,8 +15,8 @@
             <div class="card hover-lift border-left-indigo h-100 p-3">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <h6 class="text-muted fw-semibold mb-1">Cases Assigned</h6>
-                        <h2 class="fw-bold mb-0 text-dark">{{ cases_assigned }}</h2>
+                        <h6 class="text-secondary fw-semibold mb-1">Cases Assigned</h6>
+                        <h2 class="fw-bold mb-0 text-body">{{ cases_assigned }}</h2>
                     </div>
                     <div class="bg-indigo text-white rounded p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
                         <i class="bi bi-briefcase fs-4"></i>
@@ -31,8 +31,8 @@
             <div class="card hover-lift border-left-emerald h-100 p-3">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <h6 class="text-muted fw-semibold mb-1">Available Documents</h6>
-                        <h2 class="fw-bold mb-0 text-dark">{{ available_documents }}</h2>
+                        <h6 class="text-secondary fw-semibold mb-1">Available Documents</h6>
+                        <h2 class="fw-bold mb-0 text-body">{{ available_documents }}</h2>
                     </div>
                     <div class="bg-emerald text-white rounded p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
                         <i class="bi bi-files fs-4"></i>
@@ -47,8 +47,8 @@
             <div class="card hover-lift border-left-amber h-100 p-3">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <h6 class="text-muted fw-semibold mb-1">Tracked Evidence</h6>
-                        <h2 class="fw-bold mb-0 text-dark">{{ tracked_evidence }}</h2>
+                        <h6 class="text-secondary fw-semibold mb-1">Tracked Evidence</h6>
+                        <h2 class="fw-bold mb-0 text-body">{{ tracked_evidence }}</h2>
                     </div>
                     <div class="bg-amber text-white rounded p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
                         <i class="bi bi-fingerprint fs-4"></i>
@@ -64,8 +64,8 @@
     <!-- Left Column (8 cols): Recent Audit & System Activity -->
     <div class="col-lg-8 mb-4">
         <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                <h5 class="card-title mb-0 fw-bold"><i class="bi bi-activity text-indigo me-2"></i>System Activity Ledger</h5>
+            <div class="card-header d-flex justify-content-between align-items-center py-3">
+                <h5 class="card-title mb-0 fw-bold text-body"><i class="bi bi-activity text-indigo me-2"></i>System Activity Ledger</h5>
                 <a href="{% url 'audit_list' %}" class="btn btn-sm btn-outline-primary">View Complete Ledger</a>
             </div>
             <div class="card-body p-0">
@@ -117,8 +117,8 @@
     <div class="col-lg-4 mb-4">
         <!-- User Clearance Profile -->
         <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white py-3">
-                <h5 class="card-title mb-0 fw-bold"><i class="bi bi-person-badge text-indigo me-2"></i>Clearance Profile</h5>
+            <div class="card-header py-3">
+                <h5 class="card-title mb-0 fw-bold text-body"><i class="bi bi-person-badge text-indigo me-2"></i>Clearance Profile</h5>
             </div>
             <div class="card-body">
                 <div class="d-flex align-items-center mb-3">
@@ -147,8 +147,8 @@
 
         <!-- Incoming Custody Transfers -->
         <div class="card shadow-sm border-0 {% if pending_transfers %}border-top border-4 border-amber{% endif %}">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0 fw-bold">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 fw-bold text-body">
                     <i class="bi bi-box-arrow-in-right text-amber me-2"></i>Custody Transfers
                 </h5>
                 {% if pending_transfers %}
