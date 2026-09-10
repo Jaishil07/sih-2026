@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+import pyotp
 
 
 class User(AbstractUser):
@@ -47,6 +48,21 @@ class User(AbstractUser):
         blank=True, 
         related_name='subordinates'
     )
+    
+    mfa_enabled = models.BooleanField(default=False)
+    mfa_secret = models.CharField(max_length=64, blank=True, null=True)
+
+    def generate_mfa_secret(self):
+        self.mfa_secret = pyotp.random_base32()
+        self.save()
+
+    def get_totp_uri(self):
+        if not self.mfa_secret:
+            return None
+        return pyotp.totp.TOTP(self.mfa_secret).provisioning_uri(
+            name=self.username, 
+            issuer_name="Suraksha Docs"
+        )
 
     class Meta:
         ordering = ["username"]

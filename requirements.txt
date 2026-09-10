@@ -29,3 +29,5 @@ urllib3==2.7.0
 websockets==16.1.1
 pypdf
 google-genai
+pyotp
+qrcode[pil]

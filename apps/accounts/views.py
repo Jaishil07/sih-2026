@@ -1,10 +1,24 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.views.generic import TemplateView
-
+from django.contrib.auth import login as auth_login
+import pyotp
+import qrcode
+from io import BytesIO
+import base64
 
 class CustomLoginView(LoginView):
     template_name = "accounts/login.html"
+    
+    def form_valid(self, form):
+        user = form.get_user()
+        if user.mfa_enabled:
+            self.request.session['mfa_pre_verify_user_pk'] = user.pk
+            redirect_to = self.request.POST.get('next', '')
+            if redirect_to:
+                self.request.session['mfa_next'] = redirect_to
+            return redirect('mfa_verify')
+        return super().form_valid(form)
 
 
 class CustomLogoutView(LogoutView):
@@ -59,7 +73,7 @@ class AdminRequiredMixin:
 
 from django.views.generic import ListView, CreateView
 from django.urls import reverse_lazy
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.views import View
@@ -68,6 +82,84 @@ from .forms import UserCreationForm, SupervisorUpdateForm
 from django.contrib.auth.views import PasswordChangeView
 
 User = get_user_model()
+
+class MfaVerifyView(View):
+    template_name = "accounts/mfa_verify.html"
+
+    def get(self, request, *args, **kwargs):
+        if 'mfa_pre_verify_user_pk' not in request.session:
+            return redirect('login')
+        return render(request, self.template_name)
+
+    def post(self, request, *args, **kwargs):
+        user_pk = request.session.get('mfa_pre_verify_user_pk')
+        if not user_pk:
+            return redirect('login')
+            
+        user = get_object_or_404(User, pk=user_pk)
+        token = request.POST.get('token', '')
+        
+        totp = pyotp.totp.TOTP(user.mfa_secret)
+        if totp.verify(token):
+            auth_login(request, user)
+            del request.session['mfa_pre_verify_user_pk']
+            log_audit_event(user, 'MFA_LOGIN_SUCCESS', 'User', user.id)
+            
+            next_url = request.session.pop('mfa_next', None)
+            if next_url:
+                return redirect(next_url)
+            return redirect('dashboard')
+        else:
+            messages.error(request, "Invalid or expired Authenticator code.")
+            return render(request, self.template_name)
+
+class ProfileView(LoginRequiredMixin, TemplateView):
+    template_name = "accounts/profile.html"
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        if not user.mfa_enabled and not user.mfa_secret:
+            user.generate_mfa_secret()
+            
+        if user.mfa_secret:
+            uri = user.get_totp_uri()
+            qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
+            qr.add_data(uri)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+            
+            buffer = BytesIO()
+            img.save(buffer)
+            qr_b64 = base64.b64encode(buffer.getvalue()).decode()
+            context['qr_data_uri'] = f"data:image/png;base64,{qr_b64}"
+            
+        return context
+
+class MfaSetupView(LoginRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        action = request.POST.get('action')
+        
+        if action == 'disable':
+            user.mfa_enabled = False
+            user.mfa_secret = ''
+            user.save()
+            log_audit_event(user, 'MFA_DISABLED', 'User', user.id)
+            messages.success(request, "Two-Factor Authentication has been disabled.")
+            return redirect('profile')
+            
+        token = request.POST.get('token', '')
+        totp = pyotp.totp.TOTP(user.mfa_secret)
+        if totp.verify(token):
+            user.mfa_enabled = True
+            user.save()
+            log_audit_event(user, 'MFA_ENABLED', 'User', user.id)
+            messages.success(request, "Two-Factor Authentication has been successfully enabled.")
+        else:
+            messages.error(request, "Invalid Authenticator code. Please try again.")
+        return redirect('profile')
 
 class UserListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
     model = User

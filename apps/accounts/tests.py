@@ -137,3 +137,52 @@ class PasswordChangeTests(TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Your old password was entered incorrectly')
+
+class MfaTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="mfauser",
+            password="testpassword123",
+        )
+        import pyotp
+        self.mfa_secret = pyotp.random_base32()
+        self.user.mfa_enabled = True
+        self.user.mfa_secret = self.mfa_secret
+        self.user.save()
+        
+    def test_mfa_login_redirect(self):
+        response = self.client.post(reverse("login"), {
+            "username": "mfauser",
+            "password": "testpassword123"
+        })
+        self.assertRedirects(response, reverse("mfa_verify"))
+        self.assertEqual(self.client.session.get('mfa_pre_verify_user_pk'), self.user.pk)
+        
+    def test_mfa_verify_success(self):
+        session = self.client.session
+        session['mfa_pre_verify_user_pk'] = self.user.pk
+        session.save()
+        
+        import pyotp
+        totp = pyotp.totp.TOTP(self.mfa_secret)
+        token = totp.now()
+        
+        response = self.client.post(reverse("mfa_verify"), {
+            "token": token
+        })
+        self.assertRedirects(response, reverse("dashboard"))
+        
+        # Check audit log
+        from apps.audit.models import AuditLog
+        self.assertTrue(AuditLog.objects.filter(action='MFA_LOGIN_SUCCESS', resource_id=str(self.user.id)).exists())
+        
+    def test_mfa_verify_invalid_token(self):
+        session = self.client.session
+        session['mfa_pre_verify_user_pk'] = self.user.pk
+        session.save()
+        
+        response = self.client.post(reverse("mfa_verify"), {
+            "token": "000000"
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Invalid or expired Authenticator code")
