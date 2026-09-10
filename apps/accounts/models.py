@@ -6,15 +6,18 @@ class User(AbstractUser):
     """
     Custom user model extending Django's AbstractUser.
 
-    Adds employee_id, role, and department as required by
+    Adds employee_id, role, designation, and department as required by
     docs/DATABASE.md and docs/PROJECT_SPEC.md.
     """
 
     class Role(models.TextChoices):
         ADMIN = "ADMIN", "Admin"
+        SENIOR_OFFICER = "SENIOR_OFFICER", "Senior Officer"
         INVESTIGATING_OFFICER = "INVESTIGATING_OFFICER", "Investigating Officer"
         FORENSIC_OFFICER = "FORENSIC_OFFICER", "Forensic Officer"
+        PROSECUTOR = "PROSECUTOR", "Prosecutor"
         COURT_USER = "COURT_USER", "Court User"
+        AUDITOR = "AUDITOR", "Auditor"
 
     employee_id = models.CharField(
         max_length=20,
@@ -32,6 +35,10 @@ class User(AbstractUser):
         max_length=100,
         blank=True,
         default="",
+    )
+    designation = models.CharField(
+        max_length=100,
+        blank=True,
     )
 
     class Meta:

@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h3 class="card-title text-center mb-4">DMS Login</h3>
+                
+                {% if form.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {% if form.non_field_errors %}
+                        {{ form.non_field_errors }}
+                    {% else %}
+                        Please correct the errors below.
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <form method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">Username / Employee ID</label>
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                        <div class="invalid-feedback d-block">{{ form.username.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
+                        {{ form.password }}
+                        {% if form.password.errors %}
+                        <div class="invalid-feedback d-block">{{ form.password.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <input type="hidden" name="next" value="{{ next|default:'' }}">
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">Sign in</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add some quick styling for form inputs to match bootstrap -->
+<style>
+    #id_username, #id_password {
+        display: block;
+        width: 100%;
+        padding: .375rem .75rem;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: var(--bs-body-color);
+        background-color: var(--bs-body-bg);
+        background-clip: padding-box;
+        border: var(--bs-border-width) solid var(--bs-border-color);
+        border-radius: var(--bs-border-radius);
+        transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+    }
+    #id_username:focus, #id_password:focus {
+        border-color: #86b7fe;
+        outline: 0;
+        box-shadow: 0 0 0 .25rem rgba(13,110,253,.25);
+    }
+</style>
+{% endblock %}
