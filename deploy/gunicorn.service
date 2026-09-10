@@ -1,0 +1,16 @@
+[Unit]
+Description=gunicorn daemon
+After=network.target
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/sih-2026
+ExecStart=/home/ubuntu/sih-2026/venv/bin/gunicorn \
+          --access-logfile - \
+          --workers 3 \
+          --bind unix:/home/ubuntu/sih-2026/gunicorn.sock \
+          config.wsgi:application
+
+[Install]
+WantedBy=multi-user.target

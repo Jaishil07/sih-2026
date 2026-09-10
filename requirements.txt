@@ -31,3 +31,4 @@ pypdf
 google-genai
 pyotp
 qrcode[pil]
+gunicorn>=21.2.0
