@@ -4,63 +4,97 @@
 <div class="row mb-4">
     <div class="col-12">
         <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'case_list' %}">Cases</a></li>
+            <ol class="breadcrumb mb-2">
+                <li class="breadcrumb-item"><a href="{% url 'case_list' %}" class="text-decoration-none">Cases</a></li>
                 <li class="breadcrumb-item active" aria-current="page">{{ case.case_number }}</li>
             </ol>
         </nav>
-        <div class="d-flex justify-content-between align-items-center">
-            <h2>{{ case.case_number }}: {{ case.title }}</h2>
-            <div>
-                {% if case.status == 'CLOSED' %}
-                    {% if request.user.role == 'ADMIN' %}
-                    <form method="post" action="{% url 'case_reopen' case.id %}" class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-warning me-2">Reopen Case</button>
-                    </form>
-                    {% endif %}
-                {% else %}
-                    <a href="{% url 'document_upload' case.id %}" class="btn btn-primary me-2">Upload Document</a>
-                    <a href="{% url 'evidence_create' case.id %}" class="btn btn-outline-primary me-2">Register Evidence</a>
-                    {% if request.user.role == 'ADMIN' or request.user.role == 'SENIOR_OFFICER' %}
-                    <form method="post" action="{% url 'case_close' case.id %}" class="d-inline" onsubmit="return confirm('Are you sure you want to close this case?');">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">Close Case</button>
-                    </form>
-                    {% endif %}
-                {% endif %}
+        
+        <!-- Sticky Summary Banner -->
+        <div class="card shadow-sm border-0 sticky-top z-3 mb-4" style="top: 4.5rem;">
+            <div class="card-body">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                    <div>
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="hash-preview fs-5 me-3">{{ case.case_number }}</span>
+                            <h3 class="mb-0 fw-bold">{{ case.title }}</h3>
+                        </div>
+                        <div class="d-flex align-items-center flex-wrap gap-2">
+                            {% if case.status == 'CLOSED' %}
+                            <span class="badge bg-dark px-3 py-2"><i class="bi bi-lock-fill me-1"></i>CASE CLOSED</span>
+                            {% else %}
+                            <span class="badge bg-emerald px-3 py-2"><i class="bi bi-folder2-open me-1"></i>ACTIVE</span>
+                            {% endif %}
+                            
+                            <span class="badge 
+                                {% if case.classification == 'CONFIDENTIAL' %}bg-amber
+                                {% elif case.classification == 'SECRET' %}bg-crimson
+                                {% elif case.classification == 'HIGHLY_CONFIDENTIAL' %}bg-purple
+                                {% else %}bg-indigo{% endif %} px-3 py-2">
+                                <i class="bi bi-shield-lock me-1"></i>{{ case.get_classification_display }}
+                            </span>
+                            
+                            <span class="text-muted small ms-2 border-start ps-3">
+                                <i class="bi bi-calendar me-1"></i>Opened: {{ case.created_at|date:"M d, Y" }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 mt-md-0 d-flex gap-2">
+                        {% if case.status == 'CLOSED' %}
+                            {% if request.user.role == 'ADMIN' %}
+                            <form method="post" action="{% url 'case_reopen' case.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-warning shadow-sm"><i class="bi bi-unlock me-1"></i>Reopen Case</button>
+                            </form>
+                            {% endif %}
+                        {% else %}
+                            <a href="{% url 'document_upload' case.id %}" class="btn btn-indigo shadow-sm"><i class="bi bi-cloud-upload me-1"></i>Upload Document</a>
+                            <a href="{% url 'evidence_create' case.id %}" class="btn btn-outline-indigo bg-white shadow-sm"><i class="bi bi-upc-scan me-1"></i>Register Evidence</a>
+                            {% if request.user.role == 'ADMIN' or request.user.role == 'SENIOR_OFFICER' %}
+                            <form method="post" action="{% url 'case_close' case.id %}" class="d-inline" onsubmit="return confirm('Are you sure you want to close this case? This locks all modifications.');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger shadow-sm"><i class="bi bi-lock-fill me-1"></i>Close Case</button>
+                            </form>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="mt-2">
-            {% if case.status == 'CLOSED' %}
-            <span class="badge bg-dark me-2">CASE CLOSED</span>
-            {% endif %}
-            <span class="badge {% if case.classification == 'CONFIDENTIAL' %}bg-warning text-dark{% elif case.classification == 'SECRET' %}bg-danger{% else %}bg-info text-dark{% endif %} me-2">
-                {{ case.classification }}
-            </span>
-            <span class="badge bg-secondary">
-                Created: {{ case.created_at|date:"M d, Y" }}
-            </span>
-        </div>
-        <p class="mt-3 text-muted">{{ case.description }}</p>
+        
+        <p class="text-muted mb-4 px-2">{{ case.description }}</p>
     </div>
 </div>
 
-<ul class="nav nav-tabs mb-4" id="caseTabs" role="tablist">
+<ul class="nav nav-tabs modern-tabs mb-4" id="caseTabs" role="tablist">
     <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs" type="button" role="tab">Documents</button>
+        <button class="nav-link active" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs" type="button" role="tab">
+            <i class="bi bi-file-earmark-text me-2"></i>Documents 
+            <span class="badge bg-secondary rounded-pill ms-1">{{ documents|length }}</span>
+        </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="evidence-tab" data-bs-toggle="tab" data-bs-target="#evidence" type="button" role="tab">Tracked Evidence</button>
+        <button class="nav-link" id="evidence-tab" data-bs-toggle="tab" data-bs-target="#evidence" type="button" role="tab">
+            <i class="bi bi-fingerprint me-2"></i>Tracked Evidence
+            <span class="badge bg-secondary rounded-pill ms-1">{{ evidence_items|length }}</span>
+        </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="suspects-tab" data-bs-toggle="tab" data-bs-target="#suspects" type="button" role="tab">Suspects & POIs</button>
+        <button class="nav-link" id="suspects-tab" data-bs-toggle="tab" data-bs-target="#suspects" type="button" role="tab">
+            <i class="bi bi-person-bounding-box me-2"></i>Suspects & POIs
+            <span class="badge bg-secondary rounded-pill ms-1">{{ persons_of_interest|length }}</span>
+        </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="team-tab" data-bs-toggle="tab" data-bs-target="#team" type="button" role="tab">Assigned Officers</button>
+        <button class="nav-link" id="team-tab" data-bs-toggle="tab" data-bs-target="#team" type="button" role="tab">
+            <i class="bi bi-people me-2"></i>Assigned Officers
+        </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button" role="tab">Case Notes</button>
+        <button class="nav-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button" role="tab">
+            <i class="bi bi-journal-text me-2"></i>Case Notes
+        </button>
     </li>
 </ul>
 
@@ -69,36 +103,45 @@
     <div class="tab-pane fade show active" id="docs" role="tabpanel">
         <div class="card shadow-sm border-0">
             <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Title</th>
-                            <th>Type</th>
-                            <th>Latest Version</th>
-                            <th>Hash Preview</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for doc in documents %}
-                        <tr>
-                            <td>{{ doc.title }}</td>
-                            <td><span class="badge bg-secondary">{{ doc.document_type }}</span></td>
-                            {% with last_version=doc.versions.first %}
-                            <td>v{{ last_version.version_number|default:"?" }}</td>
-                            <td class="font-monospace small" title="{{ last_version.sha256_hash }}">
-                                {{ last_version.sha256_hash|slice:":8" }}...
-                            </td>
-                            {% endwith %}
-                            <td><a href="{% url 'document_detail' doc.pk %}" class="btn btn-sm btn-outline-primary">View</a></td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-4">No documents uploaded.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-muted small">
+                            <tr>
+                                <th class="ps-4">Title</th>
+                                <th>Type</th>
+                                <th>Latest Version</th>
+                                <th>Hash Preview</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in documents %}
+                            <tr>
+                                <td class="ps-4 fw-semibold">{{ doc.title }}</td>
+                                <td><span class="badge bg-light text-dark border">{{ doc.get_document_type_display|default:doc.document_type }}</span></td>
+                                {% with last_version=doc.versions.first %}
+                                <td><span class="badge bg-indigo rounded-pill px-3">v{{ last_version.version_number|default:"?" }}</span></td>
+                                <td>
+                                    <span class="hash-preview" title="{{ last_version.sha256_hash }}">
+                                        {{ last_version.sha256_hash|slice:":8" }}...
+                                    </span>
+                                </td>
+                                {% endwith %}
+                                <td class="text-end pe-4">
+                                    <a href="{% url 'document_detail' doc.pk %}" class="btn btn-sm btn-outline-indigo">Review <i class="bi bi-arrow-right-short"></i></a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-5">
+                                    <i class="bi bi-file-earmark-x fs-1 d-block mb-2 text-light"></i>
+                                    No documents uploaded.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -107,68 +150,105 @@
     <div class="tab-pane fade" id="evidence" role="tabpanel">
         <div class="card shadow-sm border-0">
             <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Evidence #</th>
-                            <th>Description</th>
-                            <th>Custodian</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in evidence_items %}
-                        <tr>
-                            <td><strong>{{ item.evidence_number }}</strong></td>
-                            <td>{{ item.description|truncatechars:50 }}</td>
-                            <td>{{ item.current_custodian.username|default:"Unassigned" }}</td>
-                            <td>
-                                {% if item.status == 'APPROVED' %}
-                                <span class="badge bg-success">Approved</span>
-                                {% elif item.status == 'REJECTED' %}
-                                <span class="badge bg-danger">Rejected</span>
-                                {% else %}
-                                <span class="badge bg-warning text-dark">Pending</span>
-                                {% endif %}
-                            </td>
-                            <td><a href="{% url 'evidence_detail' item.pk %}" class="btn btn-sm btn-outline-primary">View</a></td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-4">No evidence tracked.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-muted small">
+                            <tr>
+                                <th class="ps-4">Evidence #</th>
+                                <th>Description</th>
+                                <th>Custodian</th>
+                                <th>Status</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in evidence_items %}
+                            <tr>
+                                <td class="ps-4"><span class="hash-preview fw-bold">{{ item.evidence_number }}</span></td>
+                                <td>{{ item.description|truncatechars:50 }}</td>
+                                <td>
+                                    <i class="bi bi-person-badge text-muted me-1"></i>
+                                    {{ item.current_custodian.username|default:"Unassigned" }}
+                                </td>
+                                <td>
+                                    {% if item.status == 'APPROVED' %}
+                                    <span class="badge bg-emerald rounded-pill px-3"><i class="bi bi-check-circle me-1"></i>Approved</span>
+                                    {% elif item.status == 'REJECTED' %}
+                                    <span class="badge bg-crimson rounded-pill px-3"><i class="bi bi-x-circle me-1"></i>Rejected</span>
+                                    {% else %}
+                                    <span class="badge bg-amber rounded-pill px-3 text-dark"><i class="bi bi-clock me-1"></i>Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-4">
+                                    <a href="{% url 'evidence_detail' item.pk %}" class="btn btn-sm btn-outline-indigo">Track <i class="bi bi-arrow-right-short"></i></a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-5">
+                                    <i class="bi bi-upc-scan fs-1 d-block mb-2 text-light"></i>
+                                    No evidence tracked.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Suspects Tab -->
     <div class="tab-pane fade" id="suspects" role="tabpanel">
-        <div class="d-flex justify-content-end mb-3">
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPoiModal">
-                Add Person
+        <div class="d-flex justify-content-end mb-4">
+            <button type="button" class="btn btn-indigo shadow-sm" data-bs-toggle="modal" data-bs-target="#addPoiModal">
+                <i class="bi bi-person-plus me-1"></i> Add Person
             </button>
         </div>
-        <div class="row g-3">
+        <div class="row g-4">
             {% for poi in persons_of_interest %}
             <div class="col-md-4">
-                <div class="card shadow-sm h-100">
+                <div class="card shadow-sm h-100 hover-lift border-0 border-top border-4 {% if poi.role_in_case == 'SUSPECT' %}border-danger{% else %}border-secondary{% endif %}">
                     <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <h5 class="card-title mb-1">{{ poi.name }}</h5>
-                            <span class="badge bg-dark">{{ poi.get_role_in_case_display }}</span>
+                        <div class="d-flex align-items-start mb-3">
+                            <div class="bg-light text-secondary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
+                                <i class="bi bi-person-fill fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5 class="card-title mb-1 fw-bold">{{ poi.name }}</h5>
+                                <span class="badge {% if poi.role_in_case == 'SUSPECT' %}bg-crimson{% else %}bg-dark{% endif %} small">
+                                    {{ poi.get_role_in_case_display }}
+                                </span>
+                            </div>
                         </div>
-                        {% if poi.alias %}<h6 class="card-subtitle mb-2 text-muted">Alias: {{ poi.alias }}</h6>{% endif %}
-                        {% if poi.identification_number %}<div class="small mb-2"><strong>ID:</strong> {{ poi.identification_number }}</div>{% endif %}
-                        <p class="card-text small">{{ poi.notes }}</p>
+                        
+                        <div class="bg-light rounded p-2 mb-3">
+                            {% if poi.alias %}
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted small">Alias</span>
+                                <span class="fw-bold">"{{ poi.alias }}"</span>
+                            </div>
+                            {% endif %}
+                            {% if poi.identification_number %}
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted small">ID</span>
+                                <span class="hash-preview p-0 bg-transparent">{{ poi.identification_number }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="text-muted small lh-sm">
+                            <i class="bi bi-journal-text me-1"></i> 
+                            {{ poi.notes|default:"No notes available." }}
+                        </div>
                     </div>
                 </div>
             </div>
             {% empty %}
-            <div class="col-12 text-center text-muted py-4">No persons of interest added.</div>
+            <div class="col-12 text-center text-muted py-5">
+                <i class="bi bi-people fs-1 d-block mb-2 text-light"></i>
+                No persons of interest added.
+            </div>
             {% endfor %}
         </div>
     </div>
@@ -176,65 +256,88 @@
     <!-- Team Tab -->
     <div class="tab-pane fade" id="team" role="tabpanel">
         {% if user.role == 'ADMIN' or user.role == 'SENIOR_OFFICER' %}
-        <div class="d-flex justify-content-end mb-3">
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMemberModal">
-                Assign Officer
+        <div class="d-flex justify-content-end mb-4">
+            <button type="button" class="btn btn-indigo shadow-sm" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+                <i class="bi bi-person-plus-fill me-1"></i> Assign Officer
             </button>
         </div>
         {% endif %}
         <div class="card shadow-sm border-0">
             <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Name</th>
-                            <th>Role</th>
-                            <th>Assigned As</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for member in members %}
-                        <tr>
-                            <td>{{ member.user.username }}</td>
-                            <td>{{ member.user.get_role_display }}</td>
-                            <td>{{ member.role }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-muted small">
+                            <tr>
+                                <th class="ps-4">Officer Name</th>
+                                <th>Clearance Level</th>
+                                <th class="text-end pe-4">Assigned Role</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for member in members %}
+                            <tr>
+                                <td class="ps-4 fw-bold">
+                                    <i class="bi bi-shield-shaded text-indigo me-2"></i>{{ member.user.username }}
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if member.user.role == 'ADMIN' %}bg-purple
+                                        {% elif member.user.role == 'SENIOR_OFFICER' %}bg-blue
+                                        {% elif member.user.role == 'INVESTIGATING_OFFICER' %}bg-teal
+                                        {% else %}bg-secondary{% endif %} px-2">
+                                        {{ member.user.get_role_display }}
+                                    </span>
+                                </td>
+                                <td class="text-end pe-4 text-muted">{{ member.role }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Notes Tab -->
     <div class="tab-pane fade" id="notes" role="tabpanel">
-        <div class="card shadow-sm border-0 mb-4">
+        <div class="card shadow-sm border-0 mb-4 bg-light">
             <div class="card-body">
                 <form method="post" action="{% url 'add_case_note' case.pk %}">
                     {% csrf_token %}
                     <div class="mb-3">
-                        <textarea name="content" class="form-control" rows="3" placeholder="Add an investigative note..." required></textarea>
+                        <textarea name="content" class="form-control border-0 shadow-sm" rows="3" placeholder="Log a new investigative note..." required style="resize: none;"></textarea>
                     </div>
                     <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-primary">Add Note</button>
+                        <button type="submit" class="btn btn-indigo px-4 shadow-sm"><i class="bi bi-send-fill me-2"></i>Post Note</button>
                     </div>
                 </form>
             </div>
         </div>
         
-        <div class="timeline">
+        <div class="timeline mt-4 ms-3">
             {% for note in notes %}
-            <div class="card shadow-sm mb-3 border-0">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <strong>{{ note.author.username }} <span class="text-muted small fw-normal">({{ note.author.get_role_display }})</span></strong>
-                        <span class="text-muted small">{{ note.created_at|date:"M d, Y H:i" }}</span>
+            <div class="timeline-item">
+                <div class="timeline-icon {% if forloop.first %}success{% endif %}">
+                    <i class="bi bi-chat-text"></i>
+                </div>
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white border-0 pb-0 d-flex justify-content-between align-items-center pt-3 px-4">
+                        <div>
+                            <span class="fw-bold">{{ note.author.username }}</span>
+                            <span class="badge bg-light text-dark border ms-2">{{ note.author.get_role_display }}</span>
+                        </div>
+                        <span class="text-muted small"><i class="bi bi-clock me-1"></i>{{ note.created_at|date:"M d, Y H:i" }}</span>
                     </div>
-                    <p class="mb-0">{{ note.content|linebreaksbr }}</p>
+                    <div class="card-body px-4 pb-3 pt-2 text-dark">
+                        <p class="mb-0">{{ note.content|linebreaksbr }}</p>
+                    </div>
                 </div>
             </div>
             {% empty %}
-            <div class="text-center text-muted py-4">No collaboration notes yet.</div>
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-chat-square-text fs-1 d-block mb-2 text-light"></i>
+                No collaboration notes yet.
+            </div>
             {% endfor %}
         </div>
     </div>
@@ -244,42 +347,44 @@
 <div class="modal fade" id="addPoiModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add Person of Interest</h5>
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold"><i class="bi bi-person-plus me-2 text-indigo"></i>Add Person of Interest</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" action="{% url 'add_person_of_interest' case.pk %}">
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Name</label>
+                        <label class="form-label text-muted small fw-bold">NAME</label>
                         <input type="text" name="name" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Alias</label>
+                        <label class="form-label text-muted small fw-bold">ALIAS</label>
                         <input type="text" name="alias" class="form-control">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Role in Case</label>
-                        <select name="role_in_case" class="form-select">
-                            <option value="SUSPECT">Suspect</option>
-                            <option value="WITNESS">Witness</option>
-                            <option value="VICTIM">Victim</option>
-                            <option value="PERSON_OF_INTEREST">Person of Interest</option>
-                        </select>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small fw-bold">ROLE IN CASE</label>
+                            <select name="role_in_case" class="form-select">
+                                <option value="SUSPECT">Suspect</option>
+                                <option value="WITNESS">Witness</option>
+                                <option value="VICTIM">Victim</option>
+                                <option value="PERSON_OF_INTEREST">Person of Interest</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small fw-bold">IDENTIFICATION NUMBER</label>
+                            <input type="text" name="identification_number" class="form-control" placeholder="Aadhaar, Passport, etc.">
+                        </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Identification Number</label>
-                        <input type="text" name="identification_number" class="form-control" placeholder="Aadhaar, Passport, etc.">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Notes</label>
+                        <label class="form-label text-muted small fw-bold">NOTES</label>
                         <textarea name="notes" class="form-control" rows="3"></textarea>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save</button>
+                <div class="modal-footer bg-light border-top-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-indigo">Save Person</button>
                 </div>
             </form>
         </div>
@@ -290,15 +395,15 @@
 <div class="modal fade" id="addMemberModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Assign Officer</h5>
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold"><i class="bi bi-shield-plus me-2 text-indigo"></i>Assign Officer</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" action="{% url 'assign_member' case.pk %}">
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Select User</label>
+                        <label class="form-label text-muted small fw-bold">SELECT USER</label>
                         <select name="user_id" class="form-select" required>
                             <option value="">-- Select Officer --</option>
                             {% for u in available_users %}
@@ -307,13 +412,13 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Assigned Role</label>
+                        <label class="form-label text-muted small fw-bold">ASSIGNED ROLE / TITLE</label>
                         <input type="text" name="role" class="form-control" value="Investigator" required>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Assign</button>
+                <div class="modal-footer bg-light border-top-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-indigo">Assign</button>
                 </div>
             </form>
         </div>

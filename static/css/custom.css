@@ -1,0 +1,251 @@
+:root {
+    --law-slate: #0f172a;
+    --law-slate-light: #1e293b;
+    --law-slate-hover: #334155;
+    --law-canvas: #f8fafc;
+    --law-white: #ffffff;
+    
+    --law-emerald: #10b981;
+    --law-crimson: #ef4444;
+    --law-indigo: #4f46e5;
+    --law-amber: #f59e0b;
+    --law-teal: #14b8a6;
+    --law-purple: #8b5cf6;
+    --law-blue: #3b82f6;
+    
+    --law-text-main: #334155;
+    --law-text-muted: #64748b;
+    
+    --law-border: #e2e8f0;
+    
+    --law-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --law-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --law-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    
+    --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    font-family: var(--font-inter);
+    background-color: var(--law-canvas);
+    color: var(--law-text-main);
+    padding-top: 4.5rem; /* For fixed navbar */
+}
+
+/* Navbar */
+.navbar-law {
+    background-color: var(--law-slate) !important;
+}
+
+.navbar-law .nav-link {
+    color: #cbd5e1;
+    transition: all 0.2s ease-in-out;
+    position: relative;
+    padding-bottom: 0.5rem;
+}
+
+.navbar-law .nav-link:hover, .navbar-law .nav-link.active {
+    color: var(--law-white);
+}
+
+.navbar-law .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 10%;
+    width: 80%;
+    height: 3px;
+    background-color: var(--law-indigo);
+    border-radius: 3px 3px 0 0;
+}
+
+/* Cards */
+.card {
+    border: 1px solid var(--law-border);
+    border-radius: 0.75rem;
+    box-shadow: var(--law-shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card.hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--law-shadow-md);
+}
+
+.card-header {
+    background-color: var(--law-white);
+    border-bottom: 1px solid var(--law-border);
+    border-top-left-radius: 0.75rem !important;
+    border-top-right-radius: 0.75rem !important;
+}
+
+.border-left-indigo {
+    border-left: 4px solid var(--law-indigo) !important;
+}
+
+.border-left-emerald {
+    border-left: 4px solid var(--law-emerald) !important;
+}
+
+.border-left-amber {
+    border-left: 4px solid var(--law-amber) !important;
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+    padding: 0.4em 0.6em;
+}
+
+.bg-emerald { background-color: var(--law-emerald) !important; color: white; }
+.bg-crimson { background-color: var(--law-crimson) !important; color: white; }
+.bg-indigo { background-color: var(--law-indigo) !important; color: white; }
+.bg-purple { background-color: var(--law-purple) !important; color: white; }
+.bg-teal { background-color: var(--law-teal) !important; color: white; }
+.bg-amber { background-color: var(--law-amber) !important; color: white; }
+
+/* Pulse Animation */
+@keyframes pulse-crimson {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.pulse-crimson {
+    animation: pulse-crimson 2s infinite;
+}
+
+/* Alerts Stack */
+.alert-container {
+    position: fixed;
+    top: 5rem;
+    right: 1.5rem;
+    z-index: 1050;
+    max-width: 400px;
+}
+
+/* Timeline */
+.timeline {
+    position: relative;
+    padding: 1rem 0;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 24px;
+    width: 2px;
+    background-color: var(--law-border);
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 60px;
+    margin-bottom: 1.5rem;
+}
+
+.timeline-icon {
+    position: absolute;
+    left: 12px;
+    top: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background-color: var(--law-white);
+    border: 2px solid var(--law-indigo);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: var(--law-indigo);
+    z-index: 1;
+}
+
+.timeline-icon.success {
+    border-color: var(--law-emerald);
+    color: var(--law-emerald);
+}
+
+.timeline-icon.warning {
+    border-color: var(--law-amber);
+    color: var(--law-amber);
+}
+
+.timeline-icon.danger {
+    border-color: var(--law-crimson);
+    color: var(--law-crimson);
+}
+
+/* Typography & Layouts */
+.hash-preview {
+    font-family: monospace;
+    background-color: #f1f5f9;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    color: var(--law-slate-light);
+    font-size: 0.875rem;
+    word-break: break-all;
+}
+
+/* Integrity Stations */
+.integrity-station {
+    background-color: var(--law-slate-light);
+    color: var(--law-white);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+}
+
+.integrity-station .hash-box {
+    background-color: var(--law-slate);
+    border: 1px solid var(--law-hover);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    font-family: monospace;
+    color: #38bdf8;
+    word-break: break-all;
+}
+
+/* Nav Tabs Modern */
+.nav-tabs.modern-tabs {
+    border-bottom: 2px solid var(--law-border);
+}
+
+.nav-tabs.modern-tabs .nav-link {
+    border: none;
+    color: var(--law-text-muted);
+    font-weight: 500;
+    padding: 1rem 1.5rem;
+    position: relative;
+}
+
+.nav-tabs.modern-tabs .nav-link:hover {
+    color: var(--law-text-main);
+    background: transparent;
+}
+
+.nav-tabs.modern-tabs .nav-link.active {
+    color: var(--law-indigo);
+    background: transparent;
+}
+
+.nav-tabs.modern-tabs .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--law-indigo);
+}
+
+/* Footer */
+.law-footer {
+    border-top: 1px solid var(--law-border);
+    background-color: var(--law-white);
+    padding: 1.5rem 0;
+    margin-top: 4rem;
+    color: var(--law-text-muted);
+    font-size: 0.875rem;
+}

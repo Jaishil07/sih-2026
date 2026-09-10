@@ -1,12 +1,45 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12 d-flex justify-content-between align-items-center">
-        <h2>Cases</h2>
+<div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+        <h2 class="mb-0 fw-bold">Case Directory</h2>
+        <p class="text-muted small mb-0">Manage and track investigative cases</p>
+    </div>
+    <div class="col-md-6 text-md-end mt-3 mt-md-0">
         {% if request.user.role == 'ADMIN' or request.user.role == 'SENIOR_OFFICER' %}
-        <a href="{% url 'case_create' %}" class="btn btn-primary">Create New Case</a>
+        <a href="{% url 'case_create' %}" class="btn btn-indigo shadow-sm">
+            <i class="bi bi-plus-lg me-1"></i> Add New Case
+        </a>
         {% endif %}
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body bg-light rounded d-flex flex-column flex-md-row gap-3 py-3 px-4">
+                <div class="flex-grow-1 position-relative">
+                    <i class="bi bi-search position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
+                    <input type="text" id="caseSearchInput" class="form-control ps-5" placeholder="Search case number, title...">
+                </div>
+                <div>
+                    <select id="statusFilter" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="OPEN">Open</option>
+                        <option value="CLOSED">Closed</option>
+                    </select>
+                </div>
+                <div>
+                    <select id="classFilter" class="form-select">
+                        <option value="">All Classifications</option>
+                        <option value="INTERNAL">Internal</option>
+                        <option value="CONFIDENTIAL">Confidential</option>
+                        <option value="SECRET">Secret</option>
+                    </select>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -15,40 +48,55 @@
         <div class="card shadow-sm border-0">
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                    <table class="table table-hover align-middle mb-0" id="casesTable">
+                        <thead class="table-light text-muted small">
                             <tr>
-                                <th>Case Number</th>
+                                <th class="ps-4">Case Number</th>
                                 <th>Title</th>
                                 <th>Status</th>
                                 <th>Classification</th>
                                 <th>Created</th>
-                                <th>Actions</th>
+                                <th class="text-end pe-4">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for case in cases %}
-                            <tr>
-                                <td><strong>{{ case.case_number }}</strong></td>
-                                <td>{{ case.title }}</td>
+                            <tr class="case-row" data-status="{{ case.status }}" data-class="{{ case.classification }}">
+                                <td class="ps-4">
+                                    <span class="hash-preview fw-bold text-dark">{{ case.case_number }}</span>
+                                </td>
                                 <td>
-                                    <span class="badge {% if case.status == 'OPEN' %}bg-success{% else %}bg-secondary{% endif %}">
+                                    <div class="fw-semibold case-title">{{ case.title }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge {% if case.status == 'OPEN' %}bg-emerald{% else %}bg-secondary{% endif %} rounded-pill px-3">
                                         {{ case.status }}
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="badge {% if case.classification == 'CONFIDENTIAL' %}bg-warning text-dark{% elif case.classification == 'SECRET' %}bg-danger{% else %}bg-info text-dark{% endif %}">
-                                        {{ case.classification }}
+                                    <span class="badge 
+                                        {% if case.classification == 'CONFIDENTIAL' %}bg-amber
+                                        {% elif case.classification == 'SECRET' %}bg-crimson
+                                        {% elif case.classification == 'HIGHLY_CONFIDENTIAL' %}bg-purple
+                                        {% else %}bg-indigo{% endif %}">
+                                        <i class="bi bi-shield-lock me-1"></i>{{ case.get_classification_display }}
                                     </span>
                                 </td>
-                                <td>{{ case.created_at|date:"M d, Y" }}</td>
-                                <td>
-                                    <a href="{% url 'case_detail' case.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+                                <td class="text-muted small">
+                                    <i class="bi bi-calendar me-1"></i>{{ case.created_at|date:"M d, Y" }}
+                                </td>
+                                <td class="text-end pe-4">
+                                    <a href="{% url 'case_detail' case.pk %}" class="btn btn-sm btn-outline-primary">
+                                        Review <i class="bi bi-arrow-right-short"></i>
+                                    </a>
                                 </td>
                             </tr>
                             {% empty %}
-                            <tr>
-                                <td colspan="6" class="text-center text-muted py-4">No cases assigned to you.</td>
+                            <tr id="emptyRow">
+                                <td colspan="6" class="text-center text-muted py-5">
+                                    <i class="bi bi-folder-x fs-1 d-block mb-2 text-light"></i>
+                                    No cases assigned to you.
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -58,4 +106,40 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('caseSearchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const classFilter = document.getElementById('classFilter');
+    const rows = document.querySelectorAll('.case-row');
+    
+    function filterCases() {
+        const query = searchInput.value.toLowerCase();
+        const status = statusFilter.value;
+        const cls = classFilter.value;
+        
+        rows.forEach(row => {
+            const caseNumber = row.querySelector('.hash-preview').textContent.toLowerCase();
+            const caseTitle = row.querySelector('.case-title').textContent.toLowerCase();
+            const rowStatus = row.getAttribute('data-status');
+            const rowClass = row.getAttribute('data-class');
+            
+            const matchSearch = caseNumber.includes(query) || caseTitle.includes(query);
+            const matchStatus = status === "" || rowStatus === status;
+            const matchClass = cls === "" || rowClass === cls;
+            
+            if (matchSearch && matchStatus && matchClass) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    searchInput.addEventListener('input', filterCases);
+    statusFilter.addEventListener('change', filterCases);
+    classFilter.addEventListener('change', filterCases);
+});
+</script>
 {% endblock %}
