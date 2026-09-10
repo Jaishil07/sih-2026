@@ -4,7 +4,9 @@
 <div class="row mb-4">
     <div class="col-12 d-flex justify-content-between align-items-center">
         <h2>Cases</h2>
-        <!-- Actions could go here, e.g. New Case -->
+        {% if request.user.role == 'ADMIN' or request.user.role == 'SENIOR_OFFICER' %}
+        <a href="{% url 'case_create' %}" class="btn btn-primary">Create New Case</a>
+        {% endif %}
     </div>
 </div>
 

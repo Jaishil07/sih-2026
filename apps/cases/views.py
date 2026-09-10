@@ -87,20 +87,25 @@ def assign_member_view(request, pk):
     # Only ADMIN or SENIOR_OFFICER can assign members
     if request.user.role not in [request.user.Role.ADMIN, request.user.Role.SENIOR_OFFICER]:
         messages.error(request, "Only Admins or Senior Officers can assign case members.")
-        return redirect('case_detail', pk=case.id)
+        raise PermissionDenied
 
     user_id = request.POST.get('user_id')
     role = request.POST.get('role', 'Investigator')
     
     user_to_assign = get_object_or_404(User, id=user_id)
     
+    if request.user.role == request.user.Role.SENIOR_OFFICER:
+        if user_to_assign.supervisor != request.user and user_to_assign.department != request.user.department:
+            messages.error(request, "You can only assign your direct subordinates or users in your department.")
+            raise PermissionDenied
+
     CaseMember.objects.get_or_create(
         case=case,
         user=user_to_assign,
         defaults={'role': role}
     )
     
-    log_audit_event(request.user, 'MEMBER_ASSIGNED', 'Case', case.id, details={'assigned_user_id': user_to_assign.id})
+    log_audit_event(request.user, 'CASE_MEMBER_ASSIGNED', 'Case', case.id, details={'assigned_user_id': user_to_assign.id})
     messages.success(request, f"{user_to_assign.username} assigned to case.")
     
     return redirect('case_detail', pk=case.id)
@@ -122,6 +127,74 @@ def add_case_note_view(request, pk):
             content=content
         )
         log_audit_event(request.user, 'CASE_NOTE_ADDED', 'CaseNote', note.id)
-        messages.success(request, "Case note added successfully.")
-        
     return redirect('case_detail', pk=case.id)
+
+from django.views.generic import CreateView
+from django.urls import reverse_lazy
+from django import forms
+from django.views import View
+
+class CaseCreateForm(forms.ModelForm):
+    initial_supervisor = forms.ModelChoiceField(
+        queryset=User.objects.filter(role__in=[User.Role.ADMIN, User.Role.SENIOR_OFFICER]),
+        required=False,
+        label="Initial Supervisor/Lead Officer"
+    )
+
+    class Meta:
+        model = Case
+        fields = ['case_number', 'title', 'description', 'classification']
+
+class CaseCreateView(LoginRequiredMixin, CreateView):
+    model = Case
+    form_class = CaseCreateForm
+    template_name = "cases/case_create.html"
+    success_url = reverse_lazy('case_list')
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated or request.user.role not in [request.user.Role.ADMIN, request.user.Role.SENIOR_OFFICER]:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        response = super().form_valid(form)
+        
+        # Assign initial supervisor as member
+        supervisor = form.cleaned_data.get('initial_supervisor')
+        if supervisor:
+            CaseMember.objects.create(case=self.object, user=supervisor, role="Supervisor")
+            log_audit_event(self.request.user, 'CASE_SUPERVISOR_ASSIGNED', 'Case', self.object.id, details={'supervisor_id': supervisor.id})
+
+        # Add creator as Lead
+        CaseMember.objects.get_or_create(case=self.object, user=self.request.user, defaults={'role': 'Lead'})
+
+        log_audit_event(self.request.user, 'CASE_CREATED', 'Case', self.object.id)
+        messages.success(self.request, f"Case {self.object.case_number} created.")
+        return response
+
+class CaseCloseView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        case = get_object_or_404(Case, pk=pk)
+        if request.user.role == request.user.Role.ADMIN or case.members.filter(user=request.user, user__role=request.user.Role.SENIOR_OFFICER).exists():
+            case.status = 'CLOSED'
+            case.save()
+            log_audit_event(request.user, 'CASE_CLOSED', 'Case', case.id)
+            messages.success(request, f"Case {case.case_number} has been closed.")
+        else:
+            messages.error(request, "Only Admins or assigned Senior Officers can close cases.")
+            raise PermissionDenied
+        return redirect('case_detail', pk=case.id)
+
+class CaseReopenView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        case = get_object_or_404(Case, pk=pk)
+        if request.user.role == request.user.Role.ADMIN:
+            case.status = 'OPEN'
+            case.save()
+            log_audit_event(request.user, 'CASE_REOPENED', 'Case', case.id)
+            messages.success(request, f"Case {case.case_number} has been reopened.")
+        else:
+            messages.error(request, "Only Admins can reopen cases.")
+            raise PermissionDenied
+        return redirect('case_detail', pk=case.id)

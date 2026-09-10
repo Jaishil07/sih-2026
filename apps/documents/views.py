@@ -31,6 +31,10 @@ def document_upload_view(request, case_id):
     case = get_object_or_404(Case, id=case_id)
     if not can_access_case(request.user, case):
         raise PermissionDenied
+        
+    if case.status == 'CLOSED':
+        messages.error(request, "Cannot upload documents to a closed case.")
+        raise PermissionDenied
 
     if request.method == 'POST':
         form = DocumentUploadForm(request.POST, request.FILES)
@@ -92,6 +96,10 @@ def document_detail_view(request, pk):
 
     # Version Upload form
     if request.method == 'POST':
+        if document.case.status == 'CLOSED':
+            messages.error(request, "Cannot upload new versions to a closed case.")
+            raise PermissionDenied
+            
         form = DocumentVersionUploadForm(request.POST, request.FILES)
         if form.is_valid():
             uploaded_file = form.cleaned_data['file']

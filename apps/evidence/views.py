@@ -39,6 +39,10 @@ def evidence_create_view(request, case_id):
     if not can_access_case(request.user, case):
         raise PermissionDenied
         
+    if case.status == 'CLOSED':
+        messages.error(request, "Cannot register evidence for a closed case.")
+        raise PermissionDenied
+        
     if request.method == 'POST':
         evidence_number = request.POST.get('evidence_number')
         description = request.POST.get('description')
@@ -74,6 +78,10 @@ def evidence_detail_view(request, evidence_id):
         raise PermissionDenied
         
     if request.method == 'POST':
+        if evidence.case.status == 'CLOSED':
+            messages.error(request, "Cannot initiate custody transfers for a closed case.")
+            raise PermissionDenied
+            
         # Handling Custody Transfer form
         to_user_id = request.POST.get('to_user')
         reason = request.POST.get('reason')
