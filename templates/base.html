@@ -28,16 +28,16 @@
                         <a class="nav-link {% if 'cases' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'case_list' %}">Cases</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Documents</a>
+                        <a class="nav-link {% if 'documents' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'document_list' %}">Documents</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Evidence</a>
+                        <a class="nav-link {% if 'evidence' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'evidence_list' %}">Evidence</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#">Search</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Audit</a>
+                        <a class="nav-link {% if 'audit' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'audit_list' %}">Audit</a>
                     </li>
                 </ul>
                 

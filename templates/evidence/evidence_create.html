@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'evidence_list' %}">Evidence</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'case_detail' case.pk %}">{{ case.case_number }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Register Evidence</li>
+            </ol>
+        </nav>
+        <h2>Register New Evidence for {{ case.case_number }}</h2>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Evidence Number (Unique ID)</label>
+                        <input type="text" name="evidence_number" class="form-control" required placeholder="e.g. EV-2026-001">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="4" required placeholder="Describe the physical/digital item..."></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'case_detail' case.pk %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Register Evidence</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

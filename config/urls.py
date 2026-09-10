@@ -9,5 +9,7 @@ urlpatterns = [
     path("accounts/logout/", account_views.CustomLogoutView.as_view(), name="logout"),
     path("cases/", include("apps.cases.urls")),
     path("documents/", include("apps.documents.urls")),
+    path("evidence/", include("apps.evidence.urls")),
+    path("audit/", include("apps.audit.urls")),
     path("", account_views.DashboardView.as_view(), name="dashboard"),
 ]

@@ -81,9 +81,18 @@
                             </tr>
                         </thead>
                         <tbody>
+                            {% for log in recent_activity %}
+                            <tr>
+                                <td>{{ log.timestamp|date:"M d, Y H:i" }}</td>
+                                <td><span class="badge bg-secondary">{{ log.action }}</span></td>
+                                <td>{{ log.resource_type }} #{{ log.resource_id }}</td>
+                                <td>{{ log.actor.username|default:"System" }}</td>
+                            </tr>
+                            {% empty %}
                             <tr>
                                 <td colspan="4" class="text-center text-muted py-4">No recent activity found.</td>
                             </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>

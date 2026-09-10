@@ -19,8 +19,26 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         user = self.request.user
         
         # Add basic metrics
-        context["cases_assigned"] = user.casemember_set.count() if hasattr(user, "casemember_set") else 0
-        context["available_documents"] = 0 # To be implemented
-        context["tracked_evidence"] = 0 # To be implemented
+        from apps.cases.models import Case
+        from apps.documents.models import Document
+        from apps.evidence.models import Evidence
+        from apps.audit.models import AuditLog
         
+        if user.role == user.Role.ADMIN:
+            cases = Case.objects.all()
+        else:
+            cases = Case.objects.filter(members__user=user)
+            
+        context["cases_assigned"] = cases.count()
+        context["available_documents"] = Document.objects.filter(case__in=cases).distinct().count()
+        context["tracked_evidence"] = Evidence.objects.filter(case__in=cases).distinct().count()
+        
+        # Recent Activity
+        if user.role == user.Role.ADMIN:
+            context["recent_activity"] = AuditLog.objects.all().order_by('-timestamp')[:5]
+        else:
+            # For non-admins, we'd filter audit logs based on accessible resources.
+            # Simplified: just show logs triggered by them for now, or logs related to their cases.
+            context["recent_activity"] = AuditLog.objects.filter(actor=user).order_by('-timestamp')[:5]
+            
         return context

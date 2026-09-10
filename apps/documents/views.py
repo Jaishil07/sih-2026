@@ -1,8 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, Http404
 from django.contrib import messages
+from django.views.generic import ListView
 
 from apps.cases.models import Case
 from apps.documents.models import Document, DocumentVersion
@@ -10,6 +12,18 @@ from apps.documents.forms import DocumentUploadForm, DocumentVersionUploadForm
 from apps.documents.services import create_document_version, verify_document_version_integrity
 from apps.accounts.services import can_access_case, can_view_document
 from apps.audit.services import log_audit_event
+
+
+class DocumentListView(LoginRequiredMixin, ListView):
+    model = Document
+    template_name = "documents/document_list.html"
+    context_object_name = "documents"
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == user.Role.ADMIN:
+            return Document.objects.all().order_by('-created_at')
+        return Document.objects.filter(case__members__user=user).distinct().order_by('-created_at')
 
 
 @login_required

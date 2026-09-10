@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h2>Audit Trail</h2>
+        {% if user.role == 'ADMIN' %}
+        <form method="post" action="{% url 'verify_audit_chain' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-warning">Verify Audit Chain Integrity</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+{% if chain_valid == True %}
+<div class="alert alert-success d-flex align-items-center" role="alert">
+    <strong>✓ Audit Chain Valid</strong>: All cryptographic hashes are intact.
+</div>
+{% elif chain_valid == False %}
+<div class="alert alert-danger d-flex align-items-center pulse-danger" role="alert">
+    <strong>⚠ Audit Chain Integrity Failure</strong>: Tampering detected at Log ID {{ broken_id }}.
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" style="font-size: 0.9rem;">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Timestamp</th>
+                                <th>Actor</th>
+                                <th>Action</th>
+                                <th>Resource</th>
+                                <th>IP Address</th>
+                                <th>Previous Hash</th>
+                                <th>Event Hash</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td>{{ log.id }}</td>
+                                <td>{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+                                <td>{{ log.actor.username|default:"System" }}</td>
+                                <td><span class="badge bg-secondary">{{ log.action }}</span></td>
+                                <td>{{ log.resource_type }} #{{ log.resource_id }}</td>
+                                <td>{{ log.ip_address|default:"-" }}</td>
+                                <td class="font-monospace small text-muted" title="{{ log.previous_hash }}">
+                                    {% if log.previous_hash == '0000000000000000000000000000000000000000000000000000000000000000' %}
+                                    <span class="badge bg-dark">GENESIS</span>
+                                    {% else %}
+                                    {{ log.previous_hash|slice:":8" }}...
+                                    {% endif %}
+                                </td>
+                                <td class="font-monospace small" title="{{ log.event_hash }}">
+                                    {{ log.event_hash|slice:":8" }}...
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">No audit logs found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .pulse-danger {
+        animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+</style>
+{% endblock %}

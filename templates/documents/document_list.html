@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h2>Documents</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Document Title</th>
+                                <th>Case Number</th>
+                                <th>Type</th>
+                                <th>Latest Version</th>
+                                <th>Hash Preview</th>
+                                <th>Updated At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in documents %}
+                            <tr>
+                                <td><strong>{{ doc.title }}</strong></td>
+                                <td><a href="{% url 'case_detail' doc.case.pk %}">{{ doc.case.case_number }}</a></td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ doc.document_type }}</span>
+                                </td>
+                                {% with last_version=doc.versions.first %}
+                                <td>v{{ last_version.version_number|default:"?" }}</td>
+                                <td class="font-monospace small" title="{{ last_version.sha256_hash }}">
+                                    {{ last_version.sha256_hash|slice:":8" }}...
+                                </td>
+                                <td>{{ last_version.created_at|date:"M d, Y H:i"|default:doc.created_at|date:"M d, Y H:i" }}</td>
+                                {% endwith %}
+                                <td>
+                                    <a href="{% url 'document_detail' doc.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">No documents available.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

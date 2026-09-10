@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h2>Evidence Registry</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Evidence #</th>
+                                <th>Case Number</th>
+                                <th>Description</th>
+                                <th>Current Custodian</th>
+                                <th>Registered On</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in evidence_items %}
+                            <tr>
+                                <td><strong>{{ item.evidence_number }}</strong></td>
+                                <td><a href="{% url 'case_detail' item.case.pk %}">{{ item.case.case_number }}</a></td>
+                                <td>{{ item.description|truncatechars:50 }}</td>
+                                <td>
+                                    <span class="badge bg-primary rounded-pill">
+                                        {{ item.current_custodian.username|default:"Unassigned" }}
+                                    </span>
+                                </td>
+                                <td>{{ item.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <a href="{% url 'evidence_detail' item.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">No evidence registered.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

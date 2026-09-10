@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'evidence_list' %}">Evidence</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'case_detail' evidence.case.pk %}">{{ evidence.case.case_number }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ evidence.evidence_number }}</li>
+            </ol>
+        </nav>
+        <h2>{{ evidence.evidence_number }}</h2>
+        <div class="mt-2">
+            <span class="badge bg-secondary me-2">Registered: {{ evidence.created_at|date:"M d, Y" }}</span>
+            <span class="badge bg-primary">Custodian: {{ evidence.current_custodian.username|default:"Unassigned" }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Details and Transfer Action -->
+    <div class="col-md-5 mb-4">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">Details</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ evidence.description }}</p>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">Transfer Custody</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Transfer To (User)</label>
+                        <select name="to_user" class="form-select" required>
+                            <option value="">-- Select New Custodian --</option>
+                            {% for u in users %}
+                            {% if u.id != evidence.current_custodian.id %}
+                            <option value="{{ u.id }}">{{ u.username }} ({{ u.get_role_display }})</option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Reason</label>
+                        <input type="text" name="reason" class="form-control" required placeholder="e.g. Lab Analysis">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Location</label>
+                        <input type="text" name="location" class="form-control" required placeholder="e.g. Forensic Lab 2">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Initiate Transfer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Custody Timeline -->
+    <div class="col-md-7 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">Chain of Custody Timeline</h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    {% for transfer in transfers %}
+                    <div class="timeline-item pb-4 border-start ms-3 ps-4 position-relative">
+                        <span class="position-absolute top-0 start-0 translate-middle p-2 bg-primary border border-light rounded-circle"></span>
+                        <div class="mb-1">
+                            <span class="fw-bold">{{ transfer.to_user.username|default:"System" }}</span> received from 
+                            <span class="text-muted">{{ transfer.from_user.username|default:"Field/Unknown" }}</span>
+                        </div>
+                        <div class="small text-muted mb-2">{{ transfer.timestamp|date:"M d, Y H:i:s" }}</div>
+                        <div class="card bg-light border-0">
+                            <div class="card-body py-2 px-3 small">
+                                <div><strong>Reason:</strong> {{ transfer.reason }}</div>
+                                <div><strong>Location:</strong> {{ transfer.location|default:"Not specified" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-muted text-center py-4">No custody history found.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

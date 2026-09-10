@@ -11,7 +11,10 @@
         </nav>
         <div class="d-flex justify-content-between align-items-center">
             <h2>{{ case.case_number }}: {{ case.title }}</h2>
-            <a href="{% url 'document_upload' case.id %}" class="btn btn-primary">Upload New Document</a>
+            <div>
+                <a href="{% url 'document_upload' case.id %}" class="btn btn-primary me-2">Upload Document</a>
+                <a href="{% url 'evidence_create' case.id %}" class="btn btn-outline-primary">Register Evidence</a>
+            </div>
         </div>
         <div class="mt-2">
             <span class="badge {% if case.classification == 'CONFIDENTIAL' %}bg-warning text-dark{% elif case.classification == 'SECRET' %}bg-danger{% else %}bg-info text-dark{% endif %} me-2">
