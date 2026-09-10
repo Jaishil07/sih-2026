@@ -69,3 +69,58 @@ class CaseTests(TestCase):
         self.client.login(username="officer_b", password="password")
         response = self.client.get(reverse('case_detail', args=[self.case.id]))
         self.assertContains(response, 'Suspect was seen near the bank.')
+
+class DelegationTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(username="admin", role=User.Role.ADMIN, password="password")
+        self.senior = User.objects.create_user(username="senior", role=User.Role.SENIOR_OFFICER, password="password", department="Cyber")
+        self.officer1 = User.objects.create_user(username="officer1", role=User.Role.INVESTIGATING_OFFICER, password="password", supervisor=self.senior, department="Cyber")
+        self.officer2 = User.objects.create_user(username="officer2", role=User.Role.INVESTIGATING_OFFICER, password="password", department="Narcotics")
+        
+        self.case = Case.objects.create(case_number="CR-2", title="Delegation", created_by=self.admin)
+        CaseMember.objects.create(case=self.case, user=self.senior, role="Supervisor")
+
+    def test_senior_officer_assigns_subordinate(self):
+        self.client.login(username="senior", password="password")
+        response = self.client.post(reverse('assign_member', args=[self.case.id]), {
+            'user_id': self.officer1.id,
+            'role': 'Investigator'
+        })
+        self.assertEqual(CaseMember.objects.filter(case=self.case).count(), 2)
+        
+    def test_senior_officer_cannot_assign_non_subordinate(self):
+        self.client.login(username="senior", password="password")
+        response = self.client.post(reverse('assign_member', args=[self.case.id]), {
+            'user_id': self.officer2.id,
+            'role': 'Investigator'
+        })
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(CaseMember.objects.filter(case=self.case).count(), 1)
+
+    def test_investigating_officer_cannot_assign_or_close(self):
+        CaseMember.objects.create(case=self.case, user=self.officer1, role="Investigator")
+        self.client.login(username="officer1", password="password")
+        
+        # Try to assign
+        response = self.client.post(reverse('assign_member', args=[self.case.id]), {
+            'user_id': self.officer2.id,
+            'role': 'Investigator'
+        })
+        self.assertEqual(response.status_code, 403)
+        
+        # Try to close
+        response = self.client.post(reverse('case_close', args=[self.case.id]))
+        self.assertEqual(response.status_code, 403)
+
+    def test_closed_case_restrictions(self):
+        # Admin closes case
+        self.client.login(username="admin", password="password")
+        self.client.post(reverse('case_close', args=[self.case.id]))
+        
+        self.case.refresh_from_db()
+        self.assertEqual(self.case.status, 'CLOSED')
+        
+        # Check UI hides upload buttons
+        response = self.client.get(reverse('case_detail', args=[self.case.id]))
+        self.assertContains(response, "CASE CLOSED")
+        self.assertNotContains(response, "Upload Document")

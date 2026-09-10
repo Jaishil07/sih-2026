@@ -12,11 +12,29 @@
         <div class="d-flex justify-content-between align-items-center">
             <h2>{{ case.case_number }}: {{ case.title }}</h2>
             <div>
-                <a href="{% url 'document_upload' case.id %}" class="btn btn-primary me-2">Upload Document</a>
-                <a href="{% url 'evidence_create' case.id %}" class="btn btn-outline-primary">Register Evidence</a>
+                {% if case.status == 'CLOSED' %}
+                    {% if request.user.role == 'ADMIN' %}
+                    <form method="post" action="{% url 'case_reopen' case.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning me-2">Reopen Case</button>
+                    </form>
+                    {% endif %}
+                {% else %}
+                    <a href="{% url 'document_upload' case.id %}" class="btn btn-primary me-2">Upload Document</a>
+                    <a href="{% url 'evidence_create' case.id %}" class="btn btn-outline-primary me-2">Register Evidence</a>
+                    {% if request.user.role == 'ADMIN' or request.user.role == 'SENIOR_OFFICER' %}
+                    <form method="post" action="{% url 'case_close' case.id %}" class="d-inline" onsubmit="return confirm('Are you sure you want to close this case?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Close Case</button>
+                    </form>
+                    {% endif %}
+                {% endif %}
             </div>
         </div>
         <div class="mt-2">
+            {% if case.status == 'CLOSED' %}
+            <span class="badge bg-dark me-2">CASE CLOSED</span>
+            {% endif %}
             <span class="badge {% if case.classification == 'CONFIDENTIAL' %}bg-warning text-dark{% elif case.classification == 'SECRET' %}bg-danger{% else %}bg-info text-dark{% endif %} me-2">
                 {{ case.classification }}
             </span>

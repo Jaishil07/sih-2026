@@ -66,3 +66,74 @@ class AuthorizationServiceTests(TestCase):
         self.assertTrue(can_access_case(self.officer_a, self.case))
         # Non-member cannot access
         self.assertFalse(can_access_case(self.officer_b, self.case))
+
+class UserAdminTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(username="admin", password="password", role=User.Role.ADMIN)
+        self.officer = User.objects.create_user(username="officer", password="password", role=User.Role.INVESTIGATING_OFFICER)
+
+    def test_admin_access_only(self):
+        self.client.login(username="officer", password="password")
+        response = self.client.get(reverse('user_list'))
+        self.assertEqual(response.status_code, 403)
+        
+        self.client.login(username="admin", password="password")
+        response = self.client.get(reverse('user_list'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_create_user_by_admin(self):
+        self.client.login(username="admin", password="password")
+        response = self.client.post(reverse('user_create'), {
+            'username': 'new_user',
+            'first_name': 'New',
+            'last_name': 'User',
+            'email': 'new@example.com',
+            'role': User.Role.FORENSIC_OFFICER,
+            'initial_password': 'strongpassword123'
+        })
+        self.assertRedirects(response, reverse('user_list'))
+        
+        new_user = User.objects.get(username="new_user")
+        self.assertTrue(new_user.check_password("strongpassword123"))
+        
+        # Check audit log
+        from apps.audit.models import AuditLog
+        self.assertTrue(AuditLog.objects.filter(action='USER_CREATED', resource_type='User', resource_id=str(new_user.id)).exists())
+
+    def test_deactivate_user(self):
+        self.client.login(username="admin", password="password")
+        response = self.client.post(reverse('user_deactivate', args=[self.officer.id]))
+        self.assertRedirects(response, reverse('user_list'))
+        
+        self.officer.refresh_from_db()
+        self.assertFalse(self.officer.is_active)
+        
+        # Test login fails
+        login_success = self.client.login(username="officer", password="password")
+        self.assertFalse(login_success)
+
+class PasswordChangeTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="test_pass", password="oldpassword123")
+        
+    def test_password_change(self):
+        self.client.login(username="test_pass", password="oldpassword123")
+        response = self.client.post(reverse('password_change'), {
+            'old_password': 'oldpassword123',
+            'new_password1': 'NewStrongPass!123',
+            'new_password2': 'NewStrongPass!123'
+        })
+        self.assertRedirects(response, reverse('dashboard'))
+        
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('NewStrongPass!123'))
+        
+    def test_invalid_old_password(self):
+        self.client.login(username="test_pass", password="oldpassword123")
+        response = self.client.post(reverse('password_change'), {
+            'old_password': 'wrongpassword',
+            'new_password1': 'NewStrongPass!123',
+            'new_password2': 'NewStrongPass!123'
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Your old password was entered incorrectly')

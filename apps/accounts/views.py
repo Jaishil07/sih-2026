@@ -49,3 +49,83 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         ).order_by('-timestamp')
             
         return context
+
+class AdminRequiredMixin:
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated or request.user.role != request.user.Role.ADMIN:
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+from django.views.generic import ListView, CreateView
+from django.urls import reverse_lazy
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from django.contrib.auth import get_user_model
+from django.views import View
+from apps.audit.services import log_audit_event
+from .forms import UserCreationForm, SupervisorUpdateForm
+from django.contrib.auth.views import PasswordChangeView
+
+User = get_user_model()
+
+class UserListView(LoginRequiredMixin, AdminRequiredMixin, ListView):
+    model = User
+    template_name = "accounts/user_manage.html"
+    context_object_name = "users"
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['create_form'] = UserCreationForm()
+        context['supervisor_form'] = SupervisorUpdateForm()
+        return context
+
+class UserCreateView(LoginRequiredMixin, AdminRequiredMixin, CreateView):
+    model = User
+    form_class = UserCreationForm
+    template_name = "accounts/user_manage.html"
+    success_url = reverse_lazy('user_list')
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        log_audit_event(self.request.user, 'USER_CREATED', 'User', self.object.id)
+        messages.success(self.request, f"User {self.object.username} created successfully.")
+        return response
+        
+    def form_invalid(self, form):
+        messages.error(self.request, f"Failed to create user. Errors: {form.errors}")
+        return redirect('user_list')
+
+class UserDeactivateView(LoginRequiredMixin, AdminRequiredMixin, View):
+    def post(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        if user == request.user:
+            messages.error(request, "You cannot deactivate yourself.")
+        else:
+            user.is_active = False
+            user.save()
+            log_audit_event(request.user, 'USER_DEACTIVATED', 'User', user.id)
+            messages.success(request, f"User {user.username} deactivated.")
+        return redirect('user_list')
+
+class UserUpdateSupervisorView(LoginRequiredMixin, AdminRequiredMixin, View):
+    def post(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        form = SupervisorUpdateForm(request.POST, instance=user)
+        if form.is_valid():
+            form.save()
+            log_audit_event(request.user, 'SUPERVISOR_ASSIGNED', 'User', user.id)
+            messages.success(request, f"Supervisor updated for {user.username}.")
+        else:
+            messages.error(request, f"Failed to update supervisor: {form.errors}")
+        return redirect('user_list')
+
+class CustomPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
+    template_name = 'accounts/password_change.html'
+    success_url = reverse_lazy('dashboard')
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        log_audit_event(self.request.user, 'PASSWORD_CHANGED', 'User', self.request.user.id)
+        messages.success(self.request, "Your password has been changed successfully.")
+        return response

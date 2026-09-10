@@ -48,11 +48,15 @@
                 {% if user.is_authenticated %}
                 <div class="dropdown text-end">
                     <a href="#" class="d-block text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
-                        <strong>{{ user.username }}</strong>
-                        <span class="badge bg-secondary ms-1">{{ user.get_role_display }}</span>
+                        <strong>{{ request.user.username }}</strong>
+                        <span class="badge bg-secondary ms-1">{{ request.user.get_role_display }}</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end text-small" aria-labelledby="dropdownUser1">
-                        <li><span class="dropdown-item-text text-muted">{{ user.department }}</span></li>
+                        {% if request.user.role == 'ADMIN' %}
+                        <li><a class="dropdown-item" href="{% url 'user_list' %}">User Management</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        {% endif %}
+                        <li><a class="dropdown-item" href="{% url 'password_change' %}">Change Password</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <form action="{% url 'logout' %}" method="post" class="d-inline">
