@@ -1,0 +1,8 @@
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('case/<int:case_id>/upload/', views.document_upload_view, name='document_upload'),
+    path('<int:pk>/', views.document_detail_view, name='document_detail'),
+    path('version/<int:version_id>/download/', views.document_download_view, name='document_download'),
+]

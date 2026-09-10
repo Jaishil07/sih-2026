@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h2>Cases</h2>
+        <!-- Actions could go here, e.g. New Case -->
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Case Number</th>
+                                <th>Title</th>
+                                <th>Status</th>
+                                <th>Classification</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for case in cases %}
+                            <tr>
+                                <td><strong>{{ case.case_number }}</strong></td>
+                                <td>{{ case.title }}</td>
+                                <td>
+                                    <span class="badge {% if case.status == 'OPEN' %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {{ case.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge {% if case.classification == 'CONFIDENTIAL' %}bg-warning text-dark{% elif case.classification == 'SECRET' %}bg-danger{% else %}bg-info text-dark{% endif %}">
+                                        {{ case.classification }}
+                                    </span>
+                                </td>
+                                <td>{{ case.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <a href="{% url 'case_detail' case.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">No cases assigned to you.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

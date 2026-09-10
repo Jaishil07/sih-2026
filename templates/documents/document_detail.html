@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'case_list' %}">Cases</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'case_detail' document.case.pk %}">{{ document.case.case_number }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ document.title }}</li>
+            </ol>
+        </nav>
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>{{ document.title }}</h2>
+            <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#uploadVersionCollapse">
+                Upload New Version
+            </button>
+        </div>
+        <div class="mt-2">
+            <span class="badge bg-secondary me-2">{{ document.document_type }}</span>
+            <span class="badge {% if document.classification == 'CONFIDENTIAL' %}bg-warning text-dark{% elif document.classification == 'SECRET' %}bg-danger{% else %}bg-info text-dark{% endif %} me-2">
+                {{ document.classification }}
+            </span>
+            <span class="text-muted small">Uploaded by {{ document.created_by.username }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="collapse mb-4" id="uploadVersionCollapse">
+    <div class="card card-body shadow-sm">
+        <h5 class="card-title">Upload New Version</h5>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">File</label>
+                    {{ form.file }}
+                    {% if form.file.errors %}
+                    <div class="text-danger small mt-1">{{ form.file.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Change Reason</label>
+                    {{ form.change_reason }}
+                    <div class="form-text">Mandatory reason for updating the document.</div>
+                    {% if form.change_reason.errors %}
+                    <div class="text-danger small mt-1">{{ form.change_reason.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary">Upload</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Integrity Section -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-bottom-0 pt-4">
+                <h5 class="card-title mb-0">Integrity Status (v{{ current_version.version_number }})</h5>
+            </div>
+            <div class="card-body text-center d-flex flex-column justify-content-center">
+                {% if integrity_status == True %}
+                <div class="mb-4">
+                    <span class="badge bg-success p-3 fs-5">✓ Integrity Verified</span>
+                </div>
+                {% elif integrity_status == False %}
+                <div class="mb-4">
+                    <span class="badge bg-danger p-3 fs-5 pulse-danger">⚠ TAMPER DETECTED</span>
+                </div>
+                {% else %}
+                <div class="mb-4">
+                    <span class="badge bg-secondary p-3 fs-6">Not Verified Yet</span>
+                </div>
+                {% endif %}
+                
+                <div class="text-start mb-4">
+                    <small class="text-muted text-uppercase fw-bold">SHA-256 Hash</small>
+                    <div class="font-monospace bg-light p-2 rounded border small text-break" style="font-size: 0.8rem;">
+                        {{ current_version.sha256_hash|default:"N/A" }}
+                    </div>
+                </div>
+
+                <form method="get">
+                    <input type="hidden" name="verify_integrity" value="1">
+                    <button type="submit" class="btn btn-dark w-100">Verify File Integrity</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Version History -->
+    <div class="col-md-8 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">Version History</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Version</th>
+                                <th>Date</th>
+                                <th>Uploaded By</th>
+                                <th>Reason</th>
+                                <th>Hash Prefix</th>
+                                <th>Download</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for version in versions %}
+                            <tr class="{% if forloop.first %}table-primary bg-opacity-10{% endif %}">
+                                <td>
+                                    <strong>v{{ version.version_number }}</strong>
+                                    {% if forloop.first %}<span class="badge bg-primary ms-1">Current</span>{% endif %}
+                                </td>
+                                <td>{{ version.created_at|date:"M d, Y H:i" }}</td>
+                                <td>{{ version.created_by.username }}</td>
+                                <td><small>{{ version.change_reason|default:"-" }}</small></td>
+                                <td class="font-monospace small" title="{{ version.sha256_hash }}">
+                                    {{ version.sha256_hash|slice:":8" }}...
+                                </td>
+                                <td>
+                                    <a href="{% url 'document_download' version.pk %}" class="btn btn-sm btn-outline-secondary" target="_blank">Download</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">No versions found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    input[type="text"], input[type="file"] {
+        display: block;
+        width: 100%;
+        padding: .375rem .75rem;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: var(--bs-body-color);
+        background-color: var(--bs-body-bg);
+        background-clip: padding-box;
+        border: var(--bs-border-width) solid var(--bs-border-color);
+        border-radius: var(--bs-border-radius);
+    }
+    
+    .pulse-danger {
+        animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+        70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+</style>
+{% endblock %}
