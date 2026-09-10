@@ -16,12 +16,12 @@
                 {% if request.user.role in 'ADMIN,SENIOR_OFFICER' %}
                 <form method="post" action="{% url 'document_delete' document.pk %}" class="d-inline" onsubmit="return confirm('Are you sure you want to archive this document?');">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-danger bg-white shadow-sm">
+                    <button type="submit" class="btn btn-outline-danger shadow-sm">
                         <i class="bi bi-archive-fill me-1"></i> Archive
                     </button>
                 </form>
                 {% endif %}
-                <button type="button" class="btn btn-outline-indigo bg-white shadow-sm" data-bs-toggle="collapse" data-bs-target="#uploadVersionCollapse">
+                <button type="button" class="btn btn-outline-secondary shadow-sm" data-bs-toggle="collapse" data-bs-target="#uploadVersionCollapse">
                     <i class="bi bi-upload me-1"></i> Upload New Version
                 </button>
             </div>
@@ -69,7 +69,7 @@
             </div>
             <div class="d-flex justify-content-end">
                 <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="collapse" data-bs-target="#uploadVersionCollapse">Cancel</button>
-                <button type="submit" class="btn btn-indigo shadow-sm"><i class="bi bi-cloud-upload me-2"></i>Upload Version</button>
+                <button type="submit" class="btn btn-primary shadow-sm"><i class="bi bi-cloud-upload me-2"></i>Upload Version</button>
             </div>
         </form>
     </div>
@@ -80,7 +80,7 @@
     <div class="col-12">
         {% if ai_result %}
         <div class="card shadow-sm border-0 border-top border-4 border-info">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+            <div class="card-header d-flex justify-content-between align-items-center py-3">
                 <h5 class="card-title mb-0 fw-bold"><i class="bi bi-stars text-info me-2"></i>AI Intelligence Summary</h5>
                 <form method="get" class="m-0">
                     <input type="hidden" name="run_ai" value="1">
@@ -91,7 +91,7 @@
                 <div class="row">
                     <div class="col-lg-7 border-end-lg pe-lg-4 mb-4 mb-lg-0">
                         <h6 class="text-uppercase text-muted fw-bold small mb-3">Executive Summary</h6>
-                        <div class="mb-4 text-dark lh-base">
+                        <div class="mb-4 lh-base">
                             {% for paragraph in ai_result.summary.splitlines %}
                                 {% if paragraph %}
                                     <p class="mb-2">{{ paragraph }}</p>
@@ -149,7 +149,7 @@
                             <div class="text-muted small mb-1 fw-bold"><i class="bi bi-calendar-event me-1"></i>Dates</div>
                             <div class="d-flex flex-wrap gap-1">
                                 {% for date in ai_result.entities.dates %}
-                                <span class="badge bg-light text-dark border rounded-pill px-2 py-1 fw-normal">{{ date|striptags }}</span>
+                                <span class="badge bg-secondary rounded-pill px-2 py-1 fw-normal">{{ date|striptags }}</span>
                                 {% empty %}
                                 <span class="text-muted small">None detected</span>
                                 {% endfor %}
@@ -158,14 +158,14 @@
                     </div>
                 </div>
             </div>
-            <div class="card-footer bg-light text-muted small d-flex flex-column flex-md-row justify-content-between py-3">
-                <span class="mb-1 mb-md-0"><i class="bi bi-lightbulb me-1"></i>Suggested Type: <strong class="text-dark">{{ ai_result.suggested_type|default:"N/A" }}</strong></span>
-                <span class="mb-1 mb-md-0"><i class="bi bi-shield me-1"></i>Suggested Class: <strong class="text-dark">{{ ai_result.suggested_classification|default:"N/A" }}</strong></span>
+            <div class="card-footer text-muted small d-flex flex-column flex-md-row justify-content-between py-3">
+                <span class="mb-1 mb-md-0"><i class="bi bi-lightbulb me-1"></i>Suggested Type: <strong class="text-body">{{ ai_result.suggested_type|default:"N/A" }}</strong></span>
+                <span class="mb-1 mb-md-0"><i class="bi bi-shield me-1"></i>Suggested Class: <strong class="text-body">{{ ai_result.suggested_classification|default:"N/A" }}</strong></span>
                 <span><i class="bi bi-clock-history me-1"></i>Analyzed: {{ ai_result.created_at|date:"M d, Y H:i" }}</span>
             </div>
         </div>
         {% else %}
-        <div class="card shadow-sm border-0 border-top border-4 border-secondary bg-light">
+        <div class="card shadow-sm border-0 border-top border-4 border-secondary">
             <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-center py-4">
                 <div class="d-flex align-items-center mb-3 mb-md-0">
                     <i class="bi bi-robot fs-1 text-muted opacity-50 me-3"></i>
@@ -190,7 +190,7 @@
         <div class="integrity-station h-100 shadow-sm d-flex flex-column">
             <h5 class="fw-bold mb-4 d-flex align-items-center">
                 <i class="bi bi-shield-check me-2 fs-4 text-primary"></i>Integrity Station
-                <span class="badge bg-light text-dark ms-auto fs-6 border">v{{ current_version.version_number }}</span>
+                <span class="badge bg-secondary ms-auto fs-6">v{{ current_version.version_number }}</span>
             </h5>
             
             <div class="flex-grow-1 d-flex flex-column justify-content-center text-center mb-4">
@@ -256,7 +256,7 @@
     <!-- Version History -->
     <div class="col-lg-8 mb-4">
         <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-white py-3">
+            <div class="card-header py-3">
                 <h5 class="card-title mb-0 fw-bold"><i class="bi bi-clock-history text-indigo me-2"></i>Version History</h5>
             </div>
             <div class="card-body p-0">

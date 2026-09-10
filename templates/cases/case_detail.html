@@ -50,9 +50,9 @@
                             {% endif %}
                         {% else %}
                             {% if request.user.role in 'ADMIN,SENIOR_OFFICER,INVESTIGATING_OFFICER' %}
-                            <a href="{% url 'document_upload' case.id %}" class="btn btn-indigo shadow-sm"><i class="bi bi-cloud-upload me-1"></i>Upload Document</a>
+                            <a href="{% url 'document_upload' case.id %}" class="btn btn-primary shadow-sm"><i class="bi bi-cloud-upload me-1"></i>Upload Document</a>
                             {% endif %}
-                            <a href="{% url 'evidence_create' case.id %}" class="btn btn-outline-indigo bg-white shadow-sm"><i class="bi bi-upc-scan me-1"></i>Register Evidence</a>
+                            <a href="{% url 'evidence_create' case.id %}" class="btn btn-outline-secondary shadow-sm"><i class="bi bi-upc-scan me-1"></i>Register Evidence</a>
                             {% if request.user.role in 'ADMIN,SENIOR_OFFICER' %}
                             <form method="post" action="{% url 'case_close' case.id %}" class="d-inline" onsubmit="return confirm('Are you sure you want to close this case? This locks all modifications.');">
                                 {% csrf_token %}
@@ -123,7 +123,7 @@
                                     {{ doc.title }}
                                     {% if doc.status == 'ARCHIVED' %}<span class="badge bg-crimson ms-2 small">ARCHIVED</span>{% endif %}
                                 </td>
-                                <td><span class="badge bg-light text-dark border">{{ doc.get_document_type_display|default:doc.document_type }}</span></td>
+                                <td><span class="badge bg-secondary">{{ doc.get_document_type_display|default:doc.document_type }}</span></td>
                                 {% with last_version=doc.versions.first %}
                                 <td><span class="badge bg-indigo rounded-pill px-3">v{{ last_version.version_number|default:"?" }}</span></td>
                                 <td>
@@ -133,7 +133,7 @@
                                 </td>
                                 {% endwith %}
                                 <td class="text-end pe-4">
-                                    <a href="{% url 'document_detail' doc.pk %}" class="btn btn-sm btn-outline-indigo">Review <i class="bi bi-arrow-right-short"></i></a>
+                                    <a href="{% url 'document_detail' doc.pk %}" class="btn btn-sm btn-outline-secondary">Review <i class="bi bi-arrow-right-short"></i></a>
                                 </td>
                             </tr>
                             {% empty %}
@@ -185,7 +185,7 @@
                                     {% endif %}
                                 </td>
                                 <td class="text-end pe-4">
-                                    <a href="{% url 'evidence_detail' item.pk %}" class="btn btn-sm btn-outline-indigo">Track <i class="bi bi-arrow-right-short"></i></a>
+                                    <a href="{% url 'evidence_detail' item.pk %}" class="btn btn-sm btn-outline-secondary">Track <i class="bi bi-arrow-right-short"></i></a>
                                 </td>
                             </tr>
                             {% empty %}
@@ -206,7 +206,7 @@
     <!-- Suspects Tab -->
     <div class="tab-pane fade" id="suspects" role="tabpanel">
         <div class="d-flex justify-content-end mb-4">
-            <button type="button" class="btn btn-indigo shadow-sm" data-bs-toggle="modal" data-bs-target="#addPoiModal">
+            <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addPoiModal">
                 <i class="bi bi-person-plus me-1"></i> Add Person
             </button>
         </div>
@@ -216,7 +216,7 @@
                 <div class="card shadow-sm h-100 hover-lift border-0 border-top border-4 {% if poi.role_in_case == 'SUSPECT' %}border-danger{% else %}border-secondary{% endif %}">
                     <div class="card-body">
                         <div class="d-flex align-items-start mb-3">
-                            <div class="bg-light text-secondary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background: rgba(255, 255, 255, 0.05); color: var(--text-secondary);">
                                 <i class="bi bi-person-fill fs-4"></i>
                             </div>
                             <div class="flex-grow-1">
@@ -227,7 +227,7 @@
                             </div>
                         </div>
                         
-                        <div class="bg-light rounded p-2 mb-3">
+                        <div class="rounded p-2 mb-3" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle);">
                             {% if poi.alias %}
                             <div class="d-flex justify-content-between mb-1">
                                 <span class="text-muted small">Alias</span>
@@ -262,7 +262,7 @@
     <div class="tab-pane fade" id="team" role="tabpanel">
         {% if request.user.role in 'ADMIN,SENIOR_OFFICER' %}
         <div class="d-flex justify-content-end mb-4">
-            <button type="button" class="btn btn-indigo shadow-sm" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+            <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addMemberModal">
                 <i class="bi bi-person-plus-fill me-1"></i> Assign Officer
             </button>
         </div>
@@ -305,7 +305,7 @@
 
     <!-- Notes Tab -->
     <div class="tab-pane fade" id="notes" role="tabpanel">
-        <div class="card shadow-sm border-0 mb-4 bg-light">
+        <div class="card shadow-sm border-0 mb-4">
             <div class="card-body">
                 <form method="post" action="{% url 'add_case_note' case.pk %}">
                     {% csrf_token %}
@@ -313,7 +313,7 @@
                         <textarea name="content" class="form-control border-0 shadow-sm" rows="3" placeholder="Log a new investigative note..." required style="resize: none;"></textarea>
                     </div>
                     <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-indigo px-4 shadow-sm"><i class="bi bi-send-fill me-2"></i>Post Note</button>
+                        <button type="submit" class="btn btn-primary px-4 shadow-sm"><i class="bi bi-send-fill me-2"></i>Post Note</button>
                     </div>
                 </form>
             </div>
@@ -326,14 +326,14 @@
                     <i class="bi bi-chat-text"></i>
                 </div>
                 <div class="card shadow-sm border-0">
-                    <div class="card-header bg-white border-0 pb-0 d-flex justify-content-between align-items-center pt-3 px-4">
+                    <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center pt-3 px-4">
                         <div>
                             <span class="fw-bold">{{ note.author.username }}</span>
-                            <span class="badge bg-light text-dark border ms-2">{{ note.author.get_role_display }}</span>
+                            <span class="badge bg-secondary ms-2">{{ note.author.get_role_display }}</span>
                         </div>
                         <span class="text-muted small"><i class="bi bi-clock me-1"></i>{{ note.created_at|date:"M d, Y H:i" }}</span>
                     </div>
-                    <div class="card-body px-4 pb-3 pt-2 text-dark">
+                    <div class="card-body px-4 pb-3 pt-2">
                         <p class="mb-0">{{ note.content|linebreaksbr }}</p>
                     </div>
                 </div>
@@ -352,7 +352,7 @@
 <div class="modal fade" id="addPoiModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-light">
+            <div class="modal-header">
                 <h5 class="modal-title fw-bold"><i class="bi bi-person-plus me-2 text-indigo"></i>Add Person of Interest</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -387,9 +387,9 @@
                         <textarea name="notes" class="form-control" rows="3"></textarea>
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-top-0">
+                <div class="modal-footer border-top-0">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-indigo">Save Person</button>
+                    <button type="submit" class="btn btn-primary">Save Person</button>
                 </div>
             </form>
         </div>
@@ -400,7 +400,7 @@
 <div class="modal fade" id="addMemberModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-light">
+            <div class="modal-header">
                 <h5 class="modal-title fw-bold"><i class="bi bi-shield-plus me-2 text-indigo"></i>Assign Officer</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -421,9 +421,9 @@
                         <input type="text" name="role" class="form-control" value="Investigator" required>
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-top-0">
+                <div class="modal-footer border-top-0">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-indigo">Assign</button>
+                    <button type="submit" class="btn btn-primary">Assign</button>
                 </div>
             </form>
         </div>

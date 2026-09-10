@@ -34,7 +34,7 @@
         
         <!-- Card 1: Item Metadata -->
         <div class="card shadow-sm border-0 mb-4 border-left-indigo">
-            <div class="card-header bg-white py-3">
+            <div class="card-header py-3">
                 <h5 class="card-title mb-0 fw-bold"><i class="bi bi-info-circle me-2 text-primary"></i>Item Metadata</h5>
             </div>
             <div class="card-body">
@@ -55,18 +55,18 @@
                 </div>
                 <div class="mb-3">
                     <div class="small text-muted text-uppercase fw-semibold">Registration Date</div>
-                    <div class="text-dark">{{ evidence.created_at|date:"M d, Y H:i" }}</div>
+                    <div class="text-body">{{ evidence.created_at|date:"M d, Y H:i" }}</div>
                 </div>
                 <div class="mb-0">
                     <div class="small text-muted text-uppercase fw-semibold">Description</div>
-                    <p class="text-dark mt-1 mb-0 lh-base">{{ evidence.description|default:"No description provided." }}</p>
+                    <p class="text-body mt-1 mb-0 lh-base">{{ evidence.description|default:"No description provided." }}</p>
                 </div>
             </div>
         </div>
 
         <!-- Card 2: Approval Status -->
         <div class="card shadow-sm border-0 mb-4 {% if evidence.status == 'PENDING_APPROVAL' %}border-left-amber{% elif evidence.status == 'APPROVED' %}border-left-emerald{% else %}border-left-crimson{% endif %}">
-            <div class="card-header bg-white py-3">
+            <div class="card-header py-3">
                 <h5 class="card-title mb-0 fw-bold"><i class="bi bi-shield-check me-2 text-primary"></i>Approval Status</h5>
             </div>
             <div class="card-body">
@@ -107,7 +107,7 @@
                         by {{ evidence.approved_by.username|default:"System" }} on {{ evidence.approved_at|date:"M d, Y H:i" }}
                     </div>
                     {% if evidence.approval_notes %}
-                    <div class="p-2 bg-light rounded small border">
+                    <div class="p-2 rounded small" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle);">
                         <span class="text-muted">Notes:</span> <em>"{{ evidence.approval_notes }}"</em>
                     </div>
                     {% endif %}
@@ -117,7 +117,7 @@
 
         <!-- Card 3: Initiate Custody Transfer -->
         <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white py-3">
+            <div class="card-header py-3">
                 <h5 class="card-title mb-0 fw-bold"><i class="bi bi-arrow-left-right me-2 text-primary"></i>Initiate Custody Transfer</h5>
             </div>
             <div class="card-body">
@@ -166,7 +166,7 @@
     <!-- Right Column: Card 4: Chain of Custody Timeline -->
     <div class="col-lg-7 mb-4">
         <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0 fw-bold"><i class="bi bi-clock-history me-2 text-primary"></i>Chain of Custody Timeline</h5>
                 <span class="badge bg-secondary rounded-pill">{{ transfers|length }} event{{ transfers|length|pluralize }}</span>
             </div>
@@ -184,7 +184,7 @@
                         
                         <div class="d-flex flex-wrap justify-content-between align-items-start mb-1">
                             <div>
-                                <span class="fw-bold text-dark">{{ transfer.to_user.username|default:"System" }}</span> 
+                                <span class="fw-bold text-body">{{ transfer.to_user.username|default:"System" }}</span> 
                                 {% if transfer.status == 'PENDING' %}
                                 <span class="badge bg-amber text-dark rounded-pill px-2 ms-1">Pending Acceptance</span>
                                 <div class="small text-muted mt-1">Awaiting acceptance from {{ transfer.from_user.username|default:"Field/Unknown" }}</div>
@@ -204,7 +204,7 @@
                             </div>
                         </div>
 
-                        <div class="card bg-light border-0 mt-2">
+                        <div class="card border-0 mt-2" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle) !important;">
                             <div class="card-body py-2 px-3 small">
                                 <div><strong>Reason:</strong> {{ transfer.reason }}</div>
                                 <div><strong>Location:</strong> {{ transfer.location|default:"Not specified" }}</div>

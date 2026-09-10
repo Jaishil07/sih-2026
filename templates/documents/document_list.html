@@ -40,7 +40,7 @@
                                 <td>{{ last_version.created_at|date:"M d, Y H:i"|default:doc.created_at|date:"M d, Y H:i" }}</td>
                                 {% endwith %}
                                 <td>
-                                    <a href="{% url 'document_detail' doc.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+                                    <a href="{% url 'document_detail' doc.pk %}" class="btn btn-sm btn-outline-secondary">View</a>
                                 </td>
                             </tr>
                             {% empty %}

@@ -107,9 +107,9 @@
                                 </td>
                                 <td>{{ item.created_at|date:"M d, Y" }}</td>
                                 <td>
-                                    <a href="{% url 'evidence:evidence_detail' item.pk %}" class="btn btn-sm btn-outline-primary me-1">View</a>
+                                    <a href="{% url 'evidence:evidence_detail' item.pk %}" class="btn btn-sm btn-outline-secondary me-1">View</a>
                                     {% if item.status == 'PENDING_APPROVAL' and user.role in 'ADMIN,SENIOR_OFFICER' %}
-                                    <a href="{% url 'evidence:evidence_detail' item.pk %}" class="btn btn-sm btn-warning text-dark">Review</a>
+                                    <a href="{% url 'evidence:evidence_detail' item.pk %}" class="btn btn-sm btn-primary">Review</a>
                                     {% endif %}
                                 </td>
                             </tr>

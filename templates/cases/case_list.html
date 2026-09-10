@@ -8,7 +8,7 @@
     </div>
     <div class="col-md-6 text-md-end mt-3 mt-md-0">
         {% if request.user.role == 'ADMIN' or request.user.role == 'SENIOR_OFFICER' %}
-        <a href="{% url 'case_create' %}" class="btn btn-indigo shadow-sm">
+        <a href="{% url 'case_create' %}" class="btn btn-primary shadow-sm">
             <i class="bi bi-plus-lg me-1"></i> Add New Case
         </a>
         {% endif %}
@@ -18,7 +18,7 @@
 <div class="row mb-4">
     <div class="col-12">
         <div class="card shadow-sm border-0">
-            <div class="card-body bg-light rounded d-flex flex-column flex-md-row gap-3 py-3 px-4">
+            <div class="card-body rounded d-flex flex-column flex-md-row gap-3 py-3 px-4" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle);">
                 <div class="flex-grow-1 position-relative">
                     <i class="bi bi-search position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
                     <input type="text" id="caseSearchInput" class="form-control ps-5" placeholder="Search case number, title...">
@@ -63,7 +63,7 @@
                             {% for case in cases %}
                             <tr class="case-row" data-status="{{ case.status }}" data-class="{{ case.classification }}">
                                 <td class="ps-4">
-                                    <span class="hash-preview fw-bold text-dark">{{ case.case_number }}</span>
+                                    <span class="hash-preview fw-bold text-body">{{ case.case_number }}</span>
                                 </td>
                                 <td>
                                     <div class="fw-semibold case-title">{{ case.title }}</div>
@@ -86,7 +86,7 @@
                                     <i class="bi bi-calendar me-1"></i>{{ case.created_at|date:"M d, Y" }}
                                 </td>
                                 <td class="text-end pe-4">
-                                    <a href="{% url 'case_detail' case.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <a href="{% url 'case_detail' case.pk %}" class="btn btn-sm btn-outline-secondary">
                                         Review <i class="bi bi-arrow-right-short"></i>
                                     </a>
                                 </td>
@@ -94,7 +94,7 @@
                             {% empty %}
                             <tr id="emptyRow">
                                 <td colspan="6" class="text-center text-muted py-5">
-                                    <i class="bi bi-folder-x fs-1 d-block mb-2 text-light"></i>
+                                    <i class="bi bi-folder-x fs-1 d-block mb-2 text-secondary"></i>
                                     No cases assigned to you.
                                 </td>
                             </tr>

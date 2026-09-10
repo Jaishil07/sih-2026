@@ -42,7 +42,7 @@
     <div class="col-12 d-flex justify-content-end">
         <form method="get">
             <input type="hidden" name="verify" value="1">
-            <button type="submit" class="btn btn-indigo shadow-sm fw-bold">
+            <button type="submit" class="btn btn-primary shadow-sm fw-bold">
                 <i class="bi bi-cpu me-2"></i>Verify Entire Blockchain
             </button>
         </form>
@@ -53,13 +53,13 @@
     {% for block in blocks %}
     <div class="col-md-6 col-lg-4">
         <div class="card h-100 shadow-sm border-0 {% if forloop.first %}border-top border-4 border-indigo{% else %}border-top border-4 border-secondary{% endif %}">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0 fw-bold">Block #{{ block.index }}</h5>
                 {% if forloop.first %}
                 <span class="badge bg-indigo">Latest Block</span>
                 {% endif %}
             </div>
-            <div class="card-body bg-light">
+            <div class="card-body">
                 <div class="mb-3">
                     <span class="text-muted small fw-bold text-uppercase d-block mb-1">Mined At</span>
                     <span class="fw-medium"><i class="bi bi-clock me-1 text-muted"></i>{{ block.timestamp|date:"M d, Y H:i:s" }}</span>
@@ -91,7 +91,7 @@
                     <div class="accordion" id="accordionTx{{ block.index }}">
                         <div class="accordion-item border-0 shadow-sm">
                             <h2 class="accordion-header" id="headingTx{{ block.index }}">
-                                <button class="accordion-button collapsed py-2 px-3 small bg-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTx{{ block.index }}" aria-expanded="false" aria-controls="collapseTx{{ block.index }}">
+                                <button class="accordion-button collapsed py-2 px-3 small" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTx{{ block.index }}" aria-expanded="false" aria-controls="collapseTx{{ block.index }}">
                                     View Payload Data
                                 </button>
                             </h2>
@@ -108,10 +108,10 @@
     </div>
     {% empty %}
     <div class="col-12">
-        <div class="p-5 text-center text-muted bg-white rounded shadow-sm">
-            <i class="bi bi-link-45deg fs-1 d-block mb-2 text-light"></i>
-            <h5 class="fw-bold">No Blocks Mined Yet</h5>
-            <p class="mb-0 small">The genesis block will be created upon the first anchoring event.</p>
+        <div class="p-5 text-center rounded empty-state-inset" style="background: rgba(255, 255, 255, 0.02); border: 1px dashed rgba(255, 255, 255, 0.15);">
+            <i class="bi bi-link-45deg fs-1 d-block mb-2" style="color: #38bdf8;"></i>
+            <h5 style="color: var(--text-primary); font-weight: 600;">No Blocks Mined Yet</h5>
+            <p class="mb-0 small" style="color: var(--text-secondary);">The genesis block will be created upon the first anchoring event.</p>
         </div>
     </div>
     {% endfor %}
