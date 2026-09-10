@@ -34,9 +34,9 @@
                     </div>
                     {% endfor %}
                     
-                    <div class="d-flex justify-content-between mt-4">
-                        <a href="{% url 'case_list' %}" class="btn btn-outline-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-primary">Create Case</button>
+                    <div class="d-flex flex-column-reverse flex-md-row justify-content-between gap-2 mt-4">
+                        <a href="{% url 'case_list' %}" class="btn btn-outline-secondary w-100 w-md-auto">Cancel</a>
+                        <button type="submit" class="btn btn-primary w-100 w-md-auto">Create Case</button>
                     </div>
                 </form>
             </div>

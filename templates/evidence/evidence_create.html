@@ -31,9 +31,9 @@
                         <textarea name="description" class="form-control" rows="4" required placeholder="Describe the physical/digital item..."></textarea>
                     </div>
 
-                    <div class="d-flex justify-content-end gap-2">
-                        <a href="{% url 'case_detail' case.pk %}" class="btn btn-outline-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-primary">Register Evidence</button>
+                    <div class="d-flex flex-column-reverse flex-md-row justify-content-end gap-2">
+                        <a href="{% url 'case_detail' case.pk %}" class="btn btn-outline-secondary w-100 w-md-auto">Cancel</a>
+                        <button type="submit" class="btn btn-primary w-100 w-md-auto">Register Evidence</button>
                     </div>
                 </form>
             </div>

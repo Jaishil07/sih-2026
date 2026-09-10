@@ -183,52 +183,49 @@
             color: #6b7280;
         }
 
-        /* Input Groups */
-        .auth-input-group {
+        /* Input Groups & Centered Prefix Icons */
+        .input-icon-wrapper {
             position: relative;
-            margin-bottom: 1.1rem;
+            display: flex;
+            align-items: center;
         }
 
-        .auth-input-group .input-icon {
+        .input-icon-wrapper .input-icon {
             position: absolute;
-            left: 0.9rem;
+            left: 1rem;
             top: 50%;
             transform: translateY(-50%);
-            color: #4f46e5;
-            font-size: 1rem;
+            color: var(--text-secondary, #94a3b8);
+            font-size: 1.1rem;
             pointer-events: none;
-            z-index: 3;
+            z-index: 5;
+            line-height: 1;
         }
 
-        .auth-input-group input {
-            width: 100%;
+        .input-icon-wrapper .form-control {
+            padding-left: 2.75rem !important; /* Prevents typed text from colliding with the icon */
+            height: 48px; /* Standard ergonomic input height */
+            display: flex;
+            align-items: center;
+        }
+
+        .form-control-dark {
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 10px;
-            padding: 0.75rem 0.9rem 0.75rem 2.6rem;
-            font-size: 0.9rem;
             color: #f3f4f6;
+            font-size: 0.9rem;
             font-family: inherit;
             transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
-            outline: none;
         }
 
-        .auth-input-group input::placeholder { color: #4b5563; }
+        .form-control-dark::placeholder { color: #4b5563; }
 
-        .auth-input-group input:focus {
+        .form-control-dark:focus {
+            color: #f3f4f6;
             border-color: #4f46e5;
             background: rgba(79, 70, 229, 0.06);
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
-        }
-
-        .auth-input-group label {
-            display: block;
-            font-size: 0.72rem;
-            font-weight: 600;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            color: #6b7280;
-            margin-bottom: 0.4rem;
         }
 
         /* Submit Button */
@@ -386,27 +383,33 @@
             <form method="post" action="{% url 'login' %}" autocomplete="off">
                 {% csrf_token %}
 
-                <div class="auth-input-group">
-                    <label for="{{ form.username.id_for_label }}">Username / Employee ID</label>
-                    <i class="bi bi-person-fill input-icon"></i>
-                    <input type="text"
-                           id="{{ form.username.id_for_label }}"
-                           name="username"
-                           placeholder="Enter your username"
-                           value="{{ form.username.value|default:'' }}"
-                           autocomplete="username"
-                           required>
+                <div class="position-relative mb-3">
+                    <label for="id_username" class="form-label text-secondary small fw-semibold">USERNAME / EMPLOYEE ID</label>
+                    <div class="input-icon-wrapper position-relative">
+                        <i class="bi bi-person input-icon"></i>
+                        <input type="text"
+                               name="username"
+                               id="id_username"
+                               class="form-control form-control-dark"
+                               placeholder="Enter your username"
+                               value="{{ form.username.value|default:'' }}"
+                               autocomplete="username"
+                               required>
+                    </div>
                 </div>
 
-                <div class="auth-input-group">
-                    <label for="{{ form.password.id_for_label }}">Password</label>
-                    <i class="bi bi-shield-lock-fill input-icon"></i>
-                    <input type="password"
-                           id="{{ form.password.id_for_label }}"
-                           name="password"
-                           placeholder="Enter your password"
-                           autocomplete="current-password"
-                           required>
+                <div class="position-relative mb-3">
+                    <label for="id_password" class="form-label text-secondary small fw-semibold">PASSWORD</label>
+                    <div class="input-icon-wrapper position-relative">
+                        <i class="bi bi-shield-lock input-icon"></i>
+                        <input type="password"
+                               name="password"
+                               id="id_password"
+                               class="form-control form-control-dark"
+                               placeholder="Enter your password"
+                               autocomplete="current-password"
+                               required>
+                    </div>
                 </div>
 
                 <input type="hidden" name="next" value="{{ next|default:'' }}">

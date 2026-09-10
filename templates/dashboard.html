@@ -10,7 +10,7 @@
 
 <!-- Quick Metric Cards -->
 <div class="row mb-4 g-3">
-    <div class="col-md-4">
+    <div class="col-12 col-md-4">
         <a href="{% url 'case_list' %}" class="text-decoration-none d-block h-100">
             <div class="card hover-lift border-left-indigo h-100 p-3">
                 <div class="d-flex justify-content-between align-items-start">
@@ -26,7 +26,7 @@
             </div>
         </a>
     </div>
-    <div class="col-md-4">
+    <div class="col-12 col-md-4">
         <a href="{% url 'document_list' %}" class="text-decoration-none d-block h-100">
             <div class="card hover-lift border-left-emerald h-100 p-3">
                 <div class="d-flex justify-content-between align-items-start">
@@ -42,7 +42,7 @@
             </div>
         </a>
     </div>
-    <div class="col-md-4">
+    <div class="col-12 col-md-4">
         <a href="{% url 'evidence_list' %}" class="text-decoration-none d-block h-100">
             <div class="card hover-lift border-left-amber h-100 p-3">
                 <div class="d-flex justify-content-between align-items-start">
@@ -60,13 +60,33 @@
     </div>
 </div>
 
+{% if pending_transfers %}
+<!-- Prominent Mobile Alert: Incoming Custody Transfers -->
+<div class="row d-lg-none mb-3">
+    <div class="col-12">
+        <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center justify-content-between p-3 mb-0" role="alert">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-amber text-white rounded-circle p-2 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
+                    <i class="bi bi-box-arrow-in-right fs-5"></i>
+                </div>
+                <div>
+                    <strong class="d-block text-body">Incoming Custody Transfers ({{ pending_transfers|length }})</strong>
+                    <span class="small text-muted">Transfers awaiting your review</span>
+                </div>
+            </div>
+            <a href="#custodyTransfersCard" class="btn btn-sm btn-warning text-dark fw-semibold text-nowrap ms-2">Review</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div class="row">
     <!-- Left Column (8 cols): Recent Audit & System Activity -->
-    <div class="col-lg-8 mb-4">
+    <div class="col-lg-8 mb-4 order-2 order-lg-1">
         <div class="card shadow-sm border-0 h-100">
-            <div class="card-header d-flex justify-content-between align-items-center py-3">
+            <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center py-3 gap-2">
                 <h5 class="card-title mb-0 fw-bold text-body"><i class="bi bi-activity text-indigo me-2"></i>System Activity Ledger</h5>
-                <a href="{% url 'audit_list' %}" class="btn btn-sm btn-outline-primary">View Complete Ledger</a>
+                <a href="{% url 'audit_list' %}" class="btn btn-sm btn-outline-primary w-100 w-md-auto">View Complete Ledger</a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -114,7 +134,7 @@
     </div>
 
     <!-- Right Column (4 cols): Profile & Incoming Transfers -->
-    <div class="col-lg-4 mb-4">
+    <div class="col-lg-4 mb-4 order-1 order-lg-2">
         <!-- User Clearance Profile -->
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-header py-3">
@@ -146,7 +166,7 @@
         </div>
 
         <!-- Incoming Custody Transfers -->
-        <div class="card shadow-sm border-0 {% if pending_transfers %}border-top border-4 border-amber{% endif %}">
+        <div class="card shadow-sm border-0 {% if pending_transfers %}border-top border-4 border-amber{% endif %}" id="custodyTransfersCard">
             <div class="card-header py-3 d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0 fw-bold text-body">
                     <i class="bi bi-box-arrow-in-right text-amber me-2"></i>Custody Transfers
@@ -167,12 +187,12 @@
                                 <div class="small text-muted"><i class="bi bi-clock text-amber"></i> {{ transfer.timestamp|date:"M d, H:i" }}</div>
                             </div>
                         </div>
-                        <div class="d-flex gap-2 mt-2">
+                        <div class="d-flex flex-column flex-sm-row gap-2 mt-2">
                             <form method="post" action="{% url 'accept_custody_transfer' transfer.id %}" class="flex-grow-1">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-sm btn-success w-100"><i class="bi bi-check2"></i> Accept</button>
                             </form>
-                            <button type="button" class="btn btn-sm btn-outline-danger flex-grow-1" data-bs-toggle="modal" data-bs-target="#rejectModal{{ transfer.id }}"><i class="bi bi-x-lg"></i> Reject</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger flex-grow-1 w-100 w-sm-auto" data-bs-toggle="modal" data-bs-target="#rejectModal{{ transfer.id }}"><i class="bi bi-x-lg"></i> Reject</button>
                         </div>
                     </li>
                     

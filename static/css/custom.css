@@ -334,12 +334,33 @@ body {
   flex-shrink: 0;
 }
 
+/* Navbar Toggler Button */
+.navbar-toggler {
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 8px !important;
+  padding: 6px 10px !important;
+  color: #ffffff !important;
+  background: transparent;
+  box-shadow: none !important;
+}
+
+.navbar-toggler:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4) !important;
+}
+
+.navbar-toggler .bi-list {
+  color: #ffffff;
+  vertical-align: middle;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    TABLE ARCHITECTURE
    ───────────────────────────────────────────────────────────────────────── */
 .table-responsive {
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid var(--border-subtle);
 }
 
@@ -784,3 +805,222 @@ body {
   color: var(--accent-primary) !important;
   box-shadow: none;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   INPUT ICON WRAPPER & FORM CONTROLS
+   ───────────────────────────────────────────────────────────────────────── */
+.input-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon-wrapper .input-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary, #94a3b8);
+  font-size: 1.1rem;
+  pointer-events: none;
+  z-index: 5;
+  line-height: 1;
+}
+
+.input-icon-wrapper .form-control {
+  padding-left: 2.75rem !important; /* Prevents typed text from colliding with the icon */
+  height: 48px; /* Standard ergonomic input height */
+  display: flex;
+  align-items: center;
+}
+
+.form-control-dark {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #f3f4f6;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+.form-control-dark::placeholder { color: #4b5563; }
+
+.form-control-dark:focus {
+  color: #f3f4f6;
+  border-color: #4f46e5;
+  background: rgba(79, 70, 229, 0.06);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MOBILE NAVIGATION DRAWER (<= 991.98px)
+   ───────────────────────────────────────────────────────────────────────── */
+@media (max-width: 991.98px) {
+  /* Elevated glass mobile navigation drawer surface */
+  #navbarNav,
+  #navbarCollapse,
+  .navbar-collapse {
+    background: rgba(11, 15, 25, 0.98) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    padding: 1rem !important;
+    margin-top: 0.75rem !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6) !important;
+  }
+
+  /* Expand touch target size on mobile navigation links */
+  .navbar .nav-link {
+    min-height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    padding: 0.75rem 1rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  /* Replace bottom active underline with subtle left accent */
+  .navbar .nav-link.active::after {
+    display: none !important;
+  }
+
+  .navbar .nav-link.active {
+    border-left: 3px solid #3b82f6 !important;
+    background: rgba(59, 130, 246, 0.1) !important;
+    border-radius: 6px !important;
+    color: #ffffff !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   TOUCH UX, RESPONSIVE TABLES & MOBILE ERGONOMICS (<= 767.98px)
+   ───────────────────────────────────────────────────────────────────────── */
+@media (max-width: 767.98px) {
+  /* Minimum 44px touch targets on interactive controls */
+  .btn:not(.btn-sm),
+  .form-control,
+  .form-select,
+  .dropdown-item {
+    min-height: 44px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-sm {
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 0.75rem;
+  }
+
+  .dropdown-item {
+    display: flex;
+    align-items: center;
+    padding-top: 0.65rem !important;
+    padding-bottom: 0.65rem !important;
+  }
+
+  .theme-toggle-btn,
+  #themeToggle {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .user-avatar-circle {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  /* Responsive Data Tables & Horizontal Scroll Hint */
+  .table-responsive {
+    position: relative;
+    box-shadow: inset -12px 0 10px -8px rgba(0, 0, 0, 0.35);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Cleanly scaled table typography and cell padding */
+  .table th,
+  .table td {
+    font-size: 0.8rem !important;
+    padding: 0.6rem 0.5rem !important;
+  }
+
+  /* Automatic SHA-256 and Monospace Hash Truncation */
+  .hash-preview,
+  .hash-box,
+  .font-monospace:not(td) {
+    max-width: 110px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+  }
+
+  td.font-monospace {
+    max-width: 110px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  /* Mobile Modals: m-2 margins and 16px radius */
+  .modal-dialog {
+    margin: 0.5rem !important;
+    max-width: calc(100% - 1rem) !important;
+  }
+
+  .modal-content {
+    border-radius: 16px !important;
+    overflow: hidden;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+    gap: 0.35rem;
+  }
+
+  .modal-footer > * {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* Smooth sticky footer scaling */
+  .footer {
+    font-size: 0.75rem !important;
+    padding: 0.75rem 1rem !important;
+  }
+
+  .footer small {
+    font-size: 0.75rem !important;
+    line-height: 1.4;
+    display: inline-block;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   EXTRA NARROW SCREENS (<= 380px)
+   ───────────────────────────────────────────────────────────────────────── */
+@media (max-width: 380px) {
+  .navbar .container-fluid {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  .navbar-brand span.fs-5 {
+    font-size: 1rem !important;
+  }
+
+  .navbar-brand i {
+    font-size: 1.35rem !important;
+  }
+}
+
