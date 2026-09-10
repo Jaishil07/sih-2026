@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "apps.evidence",
     "apps.audit",
     "apps.ai_assistant",
+    "apps.blockchain",
 ]
 
 MIDDLEWARE = [

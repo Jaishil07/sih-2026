@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="mb-0 fw-bold"><i class="bi bi-link-45deg text-indigo me-2"></i>Blockchain Explorer</h2>
+        <p class="text-muted">Immutable cryptographic ledger ensuring the integrity of all evidence and documents.</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        {% if integrity_status == True %}
+        <div class="alert alert-success shadow-sm border-0 d-flex align-items-center mb-0">
+            <i class="bi bi-shield-fill-check fs-4 text-success me-3"></i>
+            <div>
+                <h5 class="mb-0 fw-bold text-success">✓ Blockchain Immutable Ledger Intact ({{ blocks|length }} Blocks Sealed)</h5>
+                <small class="text-success opacity-75">All cryptographic links and proofs-of-work are successfully verified.</small>
+            </div>
+        </div>
+        {% elif integrity_status == False %}
+        <div class="alert alert-danger shadow-sm border-0 d-flex align-items-center mb-0 pulse-crimson">
+            <i class="bi bi-shield-fill-exclamation fs-4 text-danger me-3"></i>
+            <div>
+                <h5 class="mb-0 fw-bold text-danger">⚠ Blockchain Fork/Tamper Detected!</h5>
+                <small class="text-danger opacity-75">Cryptographic verification failed at Block #{{ tampered_index }}. The chain has been compromised.</small>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-secondary shadow-sm border-0 d-flex align-items-center mb-0">
+            <i class="bi bi-shield-lock fs-4 text-secondary me-3"></i>
+            <div>
+                <h5 class="mb-0 fw-bold text-secondary">Blockchain Ledger Status Unknown</h5>
+                <small class="text-secondary opacity-75">Click 'Verify Entire Blockchain' to run a cryptographic integrity check.</small>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-end">
+        <form method="get">
+            <input type="hidden" name="verify" value="1">
+            <button type="submit" class="btn btn-indigo shadow-sm fw-bold">
+                <i class="bi bi-cpu me-2"></i>Verify Entire Blockchain
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="row g-4">
+    {% for block in blocks %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 shadow-sm border-0 {% if forloop.first %}border-top border-4 border-indigo{% else %}border-top border-4 border-secondary{% endif %}">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0 fw-bold">Block #{{ block.index }}</h5>
+                {% if forloop.first %}
+                <span class="badge bg-indigo">Latest Block</span>
+                {% endif %}
+            </div>
+            <div class="card-body bg-light">
+                <div class="mb-3">
+                    <span class="text-muted small fw-bold text-uppercase d-block mb-1">Mined At</span>
+                    <span class="fw-medium"><i class="bi bi-clock me-1 text-muted"></i>{{ block.timestamp|date:"M d, Y H:i:s" }}</span>
+                </div>
+                
+                <div class="mb-3">
+                    <span class="text-muted small fw-bold text-uppercase d-block mb-1">Nonce (PoW)</span>
+                    <span class="badge bg-secondary font-monospace">{{ block.nonce }}</span>
+                </div>
+
+                <div class="mb-3">
+                    <span class="text-muted small fw-bold text-uppercase d-block mb-1">Block Hash</span>
+                    <div class="hash-box small shadow-sm text-break font-monospace p-2 rounded bg-dark text-info">
+                        {{ block.block_hash }}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <span class="text-muted small fw-bold text-uppercase d-block mb-1">Previous Hash</span>
+                    <div class="hash-box small shadow-sm text-break font-monospace p-2 rounded bg-secondary text-white opacity-75">
+                        {{ block.previous_hash }}
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="mt-3">
+                    <span class="text-muted small fw-bold text-uppercase d-block mb-2">Transactions ({{ block.transactions|length }})</span>
+                    <div class="accordion" id="accordionTx{{ block.index }}">
+                        <div class="accordion-item border-0 shadow-sm">
+                            <h2 class="accordion-header" id="headingTx{{ block.index }}">
+                                <button class="accordion-button collapsed py-2 px-3 small bg-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTx{{ block.index }}" aria-expanded="false" aria-controls="collapseTx{{ block.index }}">
+                                    View Payload Data
+                                </button>
+                            </h2>
+                            <div id="collapseTx{{ block.index }}" class="accordion-collapse collapse" aria-labelledby="headingTx{{ block.index }}" data-bs-parent="#accordionTx{{ block.index }}">
+                                <div class="accordion-body bg-dark text-light p-2 small font-monospace rounded-bottom" style="max-height: 200px; overflow-y: auto;">
+                                    <pre class="mb-0"><code>{{ block.transactions|pprint }}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="p-5 text-center text-muted bg-white rounded shadow-sm">
+            <i class="bi bi-link-45deg fs-1 d-block mb-2 text-light"></i>
+            <h5 class="fw-bold">No Blocks Mined Yet</h5>
+            <p class="mb-0 small">The genesis block will be created upon the first anchoring event.</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

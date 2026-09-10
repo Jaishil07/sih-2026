@@ -13,6 +13,7 @@ urlpatterns = [
     path("evidence/", include("apps.evidence.urls")),
     path("audit/", include("apps.audit.urls")),
     path("accounts/", include("apps.accounts.urls")),
+    path("blockchain/", include("apps.blockchain.urls")),
     path("", include("apps.ai_assistant.urls")),
     path("", account_views.DashboardView.as_view(), name="dashboard"),
 ]

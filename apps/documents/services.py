@@ -40,6 +40,11 @@ def create_document_version(document, uploaded_file, user, change_reason="") -> 
             created_by=user
         )
         version.save()
+        
+        # Anchor to blockchain
+        from apps.blockchain.services import anchor_document_version
+        anchor_document_version(version, user)
+        
         return version
 
 def verify_document_version_integrity(version) -> bool:
