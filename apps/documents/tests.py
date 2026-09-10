@@ -130,3 +130,98 @@ class DocumentRBACTests(TestCase):
         self.client.login(username="court", password="password")
         response = self.client.get(reverse('document_upload', args=[self.case.id]))
         self.assertEqual(response.status_code, 403)
+
+from apps.documents.services import sign_document_version, verify_signature
+
+@override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT)
+class DocumentCryptoTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(username="admin_crypto", role=User.Role.ADMIN, password="password")
+        self.case = Case.objects.create(case_number="CR-CRYPTO", title="Crypto Case", created_by=self.admin)
+        self.document = Document.objects.create(case=self.case, title="Top Secret Doc", created_by=self.admin)
+        self.uploaded_file = SimpleUploadedFile("secret.txt", b"secret payload", content_type="text/plain")
+        self.version = create_document_version(self.document, self.uploaded_file, self.admin, "Initial upload")
+        
+    def test_sign_and_lock_document(self):
+        doc_sig = sign_document_version(self.version, self.admin)
+        
+        self.document.refresh_from_db()
+        self.assertTrue(self.document.is_locked)
+        self.assertEqual(self.document.locked_by, self.admin)
+        
+        self.assertTrue(verify_signature(doc_sig))
+        
+    def test_tampered_signature_fails(self):
+        doc_sig = sign_document_version(self.version, self.admin)
+        
+        # Tamper signature hex
+        tampered_hex = ("00" if doc_sig.signature_hex[:2] != "00" else "ff") + doc_sig.signature_hex[2:]
+        doc_sig.signature_hex = tampered_hex
+        doc_sig.save()
+        
+        self.assertFalse(verify_signature(doc_sig))
+        
+    def test_upload_to_locked_document_fails(self):
+        sign_document_version(self.version, self.admin)
+        
+        uploaded_file2 = SimpleUploadedFile("secret2.txt", b"payload 2", content_type="text/plain")
+        from django.core.exceptions import PermissionDenied
+        
+        with self.assertRaises(PermissionDenied):
+            create_document_version(self.document, uploaded_file2, self.admin, "Should fail")
+
+
+@override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT)
+class DocumentPreviewTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(username="admin_preview", role=User.Role.ADMIN, password="password")
+        self.case = Case.objects.create(case_number="CR-PREVIEW", title="Preview Case", created_by=self.admin)
+        self.document = Document.objects.create(case=self.case, title="Preview Doc", created_by=self.admin)
+        self.uploaded_file = SimpleUploadedFile("preview.txt", b"preview data", content_type="text/plain")
+        self.version = create_document_version(self.document, self.uploaded_file, self.admin, "Initial upload")
+        
+    def test_preview_endpoint(self):
+        self.client.login(username="admin_preview", password="password")
+        response = self.client.get(reverse('document_preview', args=[self.document.id]))
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('inline;', response['Content-Disposition'])
+        self.assertEqual(response.headers.get('X-Frame-Options'), 'SAMEORIGIN')
+
+    def test_detail_view_text_preview_context(self):
+        self.client.login(username="admin_preview", password="password")
+        response = self.client.get(reverse('document_detail', args=[self.document.id]))
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['file_type'], 'text')
+        self.assertEqual(response.context['preview_text_content'], 'preview data')
+
+    def test_detail_view_pdf_context(self):
+        self.client.login(username="admin_preview", password="password")
+        pdf_file = SimpleUploadedFile("sample.pdf", b"%PDF-1.4 sample content", content_type="application/pdf")
+        pdf_doc = Document.objects.create(case=self.case, title="PDF Doc", created_by=self.admin)
+        create_document_version(pdf_doc, pdf_file, self.admin, "Initial upload")
+        
+        response = self.client.get(reverse('document_detail', args=[pdf_doc.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['file_type'], 'pdf')
+        
+        preview_resp = self.client.get(reverse('document_preview', args=[pdf_doc.id]))
+        self.assertEqual(preview_resp.status_code, 200)
+        self.assertEqual(preview_resp.headers.get('Content-Type'), 'application/pdf')
+        self.assertEqual(preview_resp.headers.get('X-Frame-Options'), 'SAMEORIGIN')
+
+    def test_detail_view_image_context(self):
+        self.client.login(username="admin_preview", password="password")
+        img_file = SimpleUploadedFile("sample.png", b"\x89PNG\r\n\x1a\nfakeimage", content_type="image/png")
+        img_doc = Document.objects.create(case=self.case, title="Image Doc", created_by=self.admin)
+        create_document_version(img_doc, img_file, self.admin, "Initial upload")
+        
+        response = self.client.get(reverse('document_detail', args=[img_doc.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['file_type'], 'image')
+        
+        preview_resp = self.client.get(reverse('document_preview', args=[img_doc.id]))
+        self.assertEqual(preview_resp.status_code, 200)
+        self.assertEqual(preview_resp.headers.get('Content-Type'), 'image/png')
+        self.assertEqual(preview_resp.headers.get('X-Frame-Options'), 'SAMEORIGIN')

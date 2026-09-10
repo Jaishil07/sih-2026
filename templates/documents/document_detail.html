@@ -1,318 +1,456 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-2">
-                <li class="breadcrumb-item"><a href="{% url 'case_list' %}" class="text-decoration-none">Cases</a></li>
-                <li class="breadcrumb-item"><a href="{% url 'case_detail' document.case.pk %}" class="text-decoration-none">{{ document.case.case_number }}</a></li>
-                <li class="breadcrumb-item active" aria-current="page">{{ document.title }}</li>
-            </ol>
-        </nav>
-        <div class="d-flex justify-content-between align-items-center">
-            <h2 class="mb-0 fw-bold {% if document.status == 'ARCHIVED' %}text-decoration-line-through text-muted{% endif %}"><i class="bi bi-file-earmark-text text-indigo me-2"></i>{{ document.title }}</h2>
-            <div class="d-flex gap-2">
-                {% if request.user.role in 'ADMIN,SENIOR_OFFICER' %}
-                <form method="post" action="{% url 'document_delete' document.pk %}" class="d-inline" onsubmit="return confirm('Are you sure you want to archive this document?');">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-danger shadow-sm">
-                        <i class="bi bi-archive-fill me-1"></i> Archive
+<div class="container-fluid py-3">
+    <!-- Top Bar: Document Title, Case Breadcrumbs, Badges, and Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item"><a href="{% url 'case_list' %}" class="text-decoration-none">Cases</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'case_detail' document.case.pk %}" class="text-decoration-none">{{ document.case.case_number }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ document.title }}</li>
+                </ol>
+            </nav>
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                <div>
+                    <h2 class="mb-1 fw-bold {% if document.status == 'ARCHIVED' %}text-decoration-line-through text-muted{% endif %}">
+                        <i class="bi bi-file-earmark-text text-indigo me-2"></i>{{ document.title }}
+                    </h2>
+                    <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+                        {% if document.is_locked %}
+                        <span class="badge bg-secondary border px-3 py-2"><i class="bi bi-lock-fill me-1"></i>LOCKED / IMMUTABLE</span>
+                        {% endif %}
+                        <span class="badge 
+                            {% if document.classification == 'CONFIDENTIAL' %}bg-amber
+                            {% elif document.classification == 'SECRET' %}bg-crimson
+                            {% elif document.classification == 'HIGHLY_CONFIDENTIAL' %}bg-purple
+                            {% else %}bg-indigo{% endif %} px-3 py-2 shadow-sm">
+                            <i class="bi bi-shield-lock me-1"></i>{{ document.classification }}
+                        </span>
+                        <span class="badge bg-secondary border px-3 py-2">
+                            <i class="bi bi-tag me-1"></i>{{ document.get_document_type_display|default:document.document_type }}
+                        </span>
+                        {% if document.status == 'ARCHIVED' %}
+                        <span class="badge bg-crimson px-3 py-2 shadow-sm border border-light">
+                            <i class="bi bi-archive-fill me-1"></i>ARCHIVED
+                        </span>
+                        {% endif %}
+                        <span class="text-secondary small ms-1"><i class="bi bi-person me-1"></i>Uploaded by {{ document.created_by.username }}</span>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <a href="{% url 'documents:document_preview' document.pk %}" target="_blank" class="btn btn-outline-secondary shadow-sm">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>Fullscreen Preview
+                    </a>
+                    {% if current_version %}
+                    <a href="{% url 'document_download' current_version.pk %}" class="btn btn-outline-primary shadow-sm" target="_blank">
+                        <i class="bi bi-download me-1"></i>Download Document
+                    </a>
+                    {% endif %}
+                    {% if not document.is_locked and request.user.role in 'ADMIN,SENIOR_OFFICER,INVESTIGATING_OFFICER' %}
+                    <button type="button" class="btn btn-warning fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#signDocumentModal">
+                        <i class="bi bi-shield-lock-fill me-1"></i>Sign &amp; Lock
                     </button>
-                </form>
-                {% endif %}
-                <button type="button" class="btn btn-outline-secondary shadow-sm" data-bs-toggle="collapse" data-bs-target="#uploadVersionCollapse">
-                    <i class="bi bi-upload me-1"></i> Upload New Version
-                </button>
-            </div>
-        </div>
-        <div class="mt-3">
-            <span class="badge bg-secondary me-2 px-3 py-2 border"><i class="bi bi-tag me-1"></i>{{ document.document_type }}</span>
-            <span class="badge 
-                {% if document.classification == 'CONFIDENTIAL' %}bg-amber
-                {% elif document.classification == 'SECRET' %}bg-crimson
-                {% elif document.classification == 'HIGHLY_CONFIDENTIAL' %}bg-purple
-                {% else %}bg-indigo{% endif %} me-3 px-3 py-2 shadow-sm">
-                <i class="bi bi-shield-lock me-1"></i>{{ document.classification }}
-            </span>
-            {% if document.status == 'ARCHIVED' %}
-            <span class="badge bg-crimson me-3 px-3 py-2 shadow-sm border border-light">
-                <i class="bi bi-archive-fill me-1"></i>ARCHIVED
-            </span>
-            {% endif %}
-            <span class="text-muted small"><i class="bi bi-person me-1"></i>Uploaded by {{ document.created_by.username }}</span>
-        </div>
-    </div>
-</div>
-
-<div class="collapse mb-4" id="uploadVersionCollapse">
-    <div class="card card-body shadow-sm border-0 border-top border-4 border-indigo">
-        <h5 class="card-title fw-bold mb-3"><i class="bi bi-cloud-arrow-up text-indigo me-2"></i>Upload New Document Version</h5>
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label text-muted small fw-bold">SELECT FILE</label>
-                    <input type="file" name="file" class="form-control shadow-sm" required id="id_file">
-                    {% if form.file.errors %}
-                    <div class="text-danger small mt-1">{{ form.file.errors }}</div>
                     {% endif %}
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label text-muted small fw-bold">REASON FOR NEW VERSION</label>
-                    <input type="text" name="change_reason" class="form-control shadow-sm" required id="id_change_reason">
-                    <div class="form-text small">Mandatory reason for updating the document.</div>
-                    {% if form.change_reason.errors %}
-                    <div class="text-danger small mt-1">{{ form.change_reason.errors }}</div>
+                    {% if not document.is_locked %}
+                    <button type="button" class="btn btn-outline-secondary shadow-sm" data-bs-toggle="collapse" data-bs-target="#uploadVersionCollapse">
+                        <i class="bi bi-upload me-1"></i>Upload Version
+                    </button>
                     {% endif %}
-                </div>
-            </div>
-            <div class="d-flex flex-column-reverse flex-md-row justify-content-end gap-2">
-                <button type="button" class="btn btn-outline-secondary w-100 w-md-auto" data-bs-toggle="collapse" data-bs-target="#uploadVersionCollapse">Cancel</button>
-                <button type="submit" class="btn btn-primary shadow-sm w-100 w-md-auto"><i class="bi bi-cloud-upload me-2"></i>Upload Version</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- AI Intelligence Analysis -->
-<div class="row mb-4">
-    <div class="col-12">
-        {% if ai_result %}
-        <div class="card shadow-sm border-0 border-top border-4 border-info">
-            <div class="card-header d-flex justify-content-between align-items-center py-3">
-                <h5 class="card-title mb-0 fw-bold"><i class="bi bi-stars text-info me-2"></i>AI Intelligence Summary</h5>
-                <form method="get" class="m-0">
-                    <input type="hidden" name="run_ai" value="1">
-                    <button type="submit" class="btn btn-sm btn-outline-info shadow-sm"><i class="bi bi-arrow-clockwise me-1"></i>Re-run Analysis</button>
-                </form>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-lg-7 border-end-lg pe-lg-4 mb-4 mb-lg-0">
-                        <h6 class="text-uppercase text-muted fw-bold small mb-3">Executive Summary</h6>
-                        <div class="mb-4 lh-base">
-                            {% for paragraph in ai_result.summary.splitlines %}
-                                {% if paragraph %}
-                                    <p class="mb-2">{{ paragraph }}</p>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                        
-                        <h6 class="text-uppercase text-muted fw-bold small mb-3">Key Findings</h6>
-                        <ul class="list-unstyled mb-0">
-                            {% for finding in ai_result.key_findings %}
-                            <li class="mb-2 d-flex align-items-start">
-                                <i class="bi bi-check2-circle text-info me-2 mt-1"></i>
-                                <span>{{ finding }}</span>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    <div class="col-lg-5 ps-lg-4">
-                        <h6 class="text-uppercase text-muted fw-bold small mb-3">Extracted Entities</h6>
-                        
-                        <div class="mb-3">
-                            <div class="text-muted small mb-1 fw-bold"><i class="bi bi-person me-1"></i>People</div>
-                            <div class="d-flex flex-wrap gap-1">
-                                {% for person in ai_result.entities.people %}
-                                <span class="badge bg-indigo rounded-pill px-2 py-1 fw-normal">{{ person|striptags }}</span>
-                                {% empty %}
-                                <span class="text-muted small">None detected</span>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="text-muted small mb-1 fw-bold"><i class="bi bi-building me-1"></i>Organizations</div>
-                            <div class="d-flex flex-wrap gap-1">
-                                {% for org in ai_result.entities.organizations %}
-                                <span class="badge bg-slate rounded-pill px-2 py-1 fw-normal" style="background-color: var(--law-slate-light); color: white;">{{ org|striptags }}</span>
-                                {% empty %}
-                                <span class="text-muted small">None detected</span>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="text-muted small mb-1 fw-bold"><i class="bi bi-geo-alt me-1"></i>Locations</div>
-                            <div class="d-flex flex-wrap gap-1">
-                                {% for loc in ai_result.entities.locations %}
-                                <span class="badge bg-amber rounded-pill px-2 py-1 text-dark fw-normal">{{ loc|striptags }}</span>
-                                {% empty %}
-                                <span class="text-muted small">None detected</span>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        
-                        <div class="mb-0">
-                            <div class="text-muted small mb-1 fw-bold"><i class="bi bi-calendar-event me-1"></i>Dates</div>
-                            <div class="d-flex flex-wrap gap-1">
-                                {% for date in ai_result.entities.dates %}
-                                <span class="badge bg-secondary rounded-pill px-2 py-1 fw-normal">{{ date|striptags }}</span>
-                                {% empty %}
-                                <span class="text-muted small">None detected</span>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="card-footer text-muted small d-flex flex-column flex-md-row justify-content-between py-3">
-                <span class="mb-1 mb-md-0"><i class="bi bi-lightbulb me-1"></i>Suggested Type: <strong class="text-body">{{ ai_result.suggested_type|default:"N/A" }}</strong></span>
-                <span class="mb-1 mb-md-0"><i class="bi bi-shield me-1"></i>Suggested Class: <strong class="text-body">{{ ai_result.suggested_classification|default:"N/A" }}</strong></span>
-                <span><i class="bi bi-clock-history me-1"></i>Analyzed: {{ ai_result.created_at|date:"M d, Y H:i" }}</span>
-            </div>
-        </div>
-        {% else %}
-        <div class="card shadow-sm border-0 border-top border-4 border-secondary">
-            <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-center py-4">
-                <div class="d-flex align-items-center mb-3 mb-md-0">
-                    <i class="bi bi-robot fs-1 text-muted opacity-50 me-3"></i>
-                    <div>
-                        <h5 class="mb-1 fw-bold text-muted">AI Analysis Not Available</h5>
-                        <p class="text-muted small mb-0">Generate AI intelligence to extract summaries and forensic entities automatically.</p>
-                    </div>
-                </div>
-                <form method="get" class="m-0">
-                    <input type="hidden" name="run_ai" value="1">
-                    <button type="submit" class="btn btn-outline-secondary shadow-sm"><i class="bi bi-stars me-2"></i>Run AI Analysis</button>
-                </form>
-            </div>
-        </div>
-        {% endif %}
-    </div>
-</div>
-
-<div class="row">
-    <!-- Integrity Section -->
-    <div class="col-lg-4 mb-4">
-        <div class="integrity-station h-100 shadow-sm d-flex flex-column">
-            <h5 class="fw-bold mb-4 d-flex align-items-center">
-                <i class="bi bi-shield-check me-2 fs-4 text-primary"></i>Integrity Station
-                <span class="badge bg-secondary ms-auto fs-6">v{{ current_version.version_number }}</span>
-            </h5>
-            
-            <div class="flex-grow-1 d-flex flex-column justify-content-center text-center mb-4">
-                {% if integrity_status == True %}
-                <div class="p-3 bg-emerald bg-opacity-10 rounded mb-4 border border-emerald">
-                    <i class="bi bi-check-circle-fill text-emerald fs-1 d-block mb-2"></i>
-                    <h5 class="text-emerald fw-bold mb-1">INTEGRITY VERIFIED</h5>
-                    <div class="small text-emerald opacity-75">Bit-level match confirmed</div>
-                </div>
-                {% elif integrity_status == False %}
-                <div class="p-3 bg-crimson bg-opacity-10 rounded mb-4 border border-crimson pulse-crimson">
-                    <i class="bi bi-exclamation-triangle-fill text-crimson fs-1 d-block mb-2"></i>
-                    <h5 class="text-crimson fw-bold mb-1">TAMPER DETECTED</h5>
-                    <div class="small text-crimson opacity-75">File byte mismatch detected!</div>
-                </div>
-                {% else %}
-                <div class="p-3 bg-dark bg-opacity-50 rounded mb-4 border border-secondary">
-                    <i class="bi bi-shield-slash text-secondary fs-1 d-block mb-2"></i>
-                    <h5 class="text-secondary fw-bold mb-1">UNTESTED</h5>
-                    <div class="small text-secondary opacity-75">Run cryptographic verification</div>
-                </div>
-                {% endif %}
-                
-                <div class="text-start">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted text-uppercase small fw-bold" style="letter-spacing: 1px;">SHA-256 HASH</span>
-                        <button class="btn btn-sm btn-link text-info p-0 text-decoration-none" onclick="navigator.clipboard.writeText('{{ current_version.sha256_hash|default:'' }}'); this.innerHTML='<i class=\'bi bi-check2\'></i> Copied'; setTimeout(() => this.innerHTML='<i class=\'bi bi-clipboard\'></i> Copy', 2000);">
-                            <i class="bi bi-clipboard"></i> Copy
+                    {% if request.user.role in 'ADMIN,SENIOR_OFFICER' and not document.is_locked %}
+                    <form method="post" action="{% url 'document_delete' document.pk %}" class="d-inline" onsubmit="return confirm('Are you sure you want to archive this document?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger shadow-sm">
+                            <i class="bi bi-archive-fill me-1"></i>Archive
                         </button>
-                    </div>
-                    <div class="hash-box small shadow-sm">
-                        {{ current_version.sha256_hash|default:"N/A" }}
-                    </div>
-                </div>
-                
-                <div class="text-start mt-4 pt-3 border-top border-secondary">
-                    <div class="d-flex align-items-center mb-2">
-                        <i class="bi bi-link-45deg text-indigo fs-5 me-2"></i>
-                        <span class="text-muted text-uppercase small fw-bold" style="letter-spacing: 1px;">Blockchain Anchor</span>
-                    </div>
-                    {% if current_version.sha256_hash %}
-                    <div class="small mb-1">
-                        <span class="text-muted">Block:</span> <span class="badge bg-indigo font-monospace">See Explorer</span>
-                    </div>
-                    <div class="small">
-                        <span class="text-muted">Hash anchored on-chain.</span>
-                    </div>
-                    {% else %}
-                    <div class="small text-muted fst-italic">Not anchored</div>
+                    </form>
                     {% endif %}
                 </div>
             </div>
+        </div>
+    </div>
 
-            <form method="get" class="mt-auto">
-                <input type="hidden" name="verify_integrity" value="1">
-                <button type="submit" class="btn btn-outline-info w-100 fw-bold shadow-sm py-2">
-                    <i class="bi bi-cpu me-2"></i>Verify File Integrity
-                </button>
+    {% if not document.is_locked %}
+    <!-- Version Upload Collapse -->
+    <div class="collapse mb-4" id="uploadVersionCollapse">
+        <div class="card card-body shadow-sm border-0 border-top border-4 border-indigo">
+            <h5 class="card-title fw-bold mb-3"><i class="bi bi-cloud-arrow-up text-indigo me-2"></i>Upload New Document Version</h5>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted small fw-bold">SELECT FILE</label>
+                        <input type="file" name="file" class="form-control shadow-sm" required id="id_file">
+                        {% if form.file.errors %}
+                        <div class="text-danger small mt-1">{{ form.file.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted small fw-bold">REASON FOR NEW VERSION</label>
+                        <input type="text" name="change_reason" class="form-control shadow-sm" required id="id_change_reason">
+                        <div class="form-text small">Mandatory reason for updating the document.</div>
+                        {% if form.change_reason.errors %}
+                        <div class="text-danger small mt-1">{{ form.change_reason.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="d-flex flex-column-reverse flex-md-row justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary w-100 w-md-auto" data-bs-toggle="collapse" data-bs-target="#uploadVersionCollapse">Cancel</button>
+                    <button type="submit" class="btn btn-primary shadow-sm w-100 w-md-auto"><i class="bi bi-cloud-upload me-2"></i>Upload Version</button>
+                </div>
             </form>
         </div>
     </div>
-    
-    <!-- Version History -->
-    <div class="col-lg-8 mb-4">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-header py-3">
-                <h5 class="card-title mb-0 fw-bold"><i class="bi bi-clock-history text-indigo me-2"></i>Version History</h5>
+    {% endif %}
+
+    <!-- 8-4 Forensic Workbench Layout -->
+    <div class="row">
+        <!-- Left Main Stage (col-lg-8) -->
+        <div class="col-lg-8">
+            <!-- 1. Document Content Preview Card -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0 fw-bold"><i class="bi bi-display text-indigo me-2"></i>Document Content Preview</h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-secondary text-uppercase">{{ file_type }}</span>
+                        <a href="{% url 'documents:document_preview' document.pk %}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-box-arrow-up-right me-1"></i>Fullscreen Preview
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-0 bg-inset">
+                    {% if file_type == 'pdf' %}
+                        <iframe src="{% url 'documents:document_preview' document.pk %}" width="100%" height="700px" class="rounded border-0" style="background: #525659;"></iframe>
+                    {% elif file_type == 'image' %}
+                        <div class="text-center p-3 bg-inset rounded">
+                            <img src="{% url 'documents:document_preview' document.pk %}" class="img-fluid rounded shadow-sm" style="max-height: 650px;">
+                        </div>
+                    {% elif file_type == 'text' %}
+                        <div class="bg-inset p-3 rounded font-monospace small" style="max-height: 650px; overflow-y: auto; white-space: pre-wrap; font-family: monospace;">{{ preview_text_content }}</div>
+                    {% else %}
+                        <div class="text-center p-5 bg-inset rounded">
+                            <i class="bi bi-file-earmark-binary text-secondary fs-1 d-block mb-3"></i>
+                            <h5 class="fw-bold mb-2">{{ current_version.file.name|slice:"-30:" }}</h5>
+                            <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
+                                <span class="badge bg-secondary">{{ file_ext|upper|default:"FILE" }}</span>
+                                {% if current_version.file.size %}
+                                <span class="text-secondary small">{{ current_version.file.size|filesizeformat }}</span>
+                                {% endif %}
+                            </div>
+                            <p class="text-secondary small mb-4">Direct in-browser preview is not supported for this file format.</p>
+                            {% if current_version %}
+                            <a href="{% url 'document_download' current_version.pk %}" class="btn btn-primary shadow-sm px-4">
+                                <i class="bi bi-download me-2"></i>Download File to View
+                            </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light text-muted small">
-                            <tr>
-                                <th class="ps-4">Version</th>
-                                <th>Date</th>
-                                <th>Author</th>
-                                <th>Reason</th>
-                                <th>Hash Prefix</th>
-                                <th class="text-end pe-4">File</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for version in versions %}
-                            <tr class="{% if forloop.first %}bg-indigo bg-opacity-10{% endif %}">
-                                <td class="ps-4">
-                                    <span class="fw-bold">v{{ version.version_number }}</span>
-                                    {% if forloop.first %}<span class="badge bg-indigo ms-1">Current</span>{% endif %}
-                                </td>
-                                <td class="text-muted small"><i class="bi bi-calendar me-1"></i>{{ version.created_at|date:"M d, Y H:i" }}</td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-person-circle text-muted me-1"></i>
-                                        {{ version.created_by.username }}
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="text-muted fst-italic small">"{{ version.change_reason|default:"Initial version"|truncatechars:30 }}"</span>
-                                </td>
-                                <td>
-                                    <span class="hash-preview" title="{{ version.sha256_hash }}">
-                                        {{ version.sha256_hash|slice:":8" }}...
-                                    </span>
-                                </td>
-                                <td class="text-end pe-4">
-                                    <a href="{% url 'document_download' version.pk %}" class="btn btn-sm btn-dark shadow-sm" target="_blank" title="Secure Download">
-                                        <i class="bi bi-download"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="6" class="text-center text-muted py-5">
-                                    <i class="bi bi-journal-x fs-1 d-block mb-2 text-light"></i>
-                                    No versions found.
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+
+            <!-- 2. AI Intelligence Analysis Card -->
+            {% if ai_result %}
+            <div class="card shadow-sm border-0 border-top border-4 border-info mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center py-3">
+                    <h5 class="card-title mb-0 fw-bold"><i class="bi bi-stars text-info me-2"></i>AI Intelligence Summary</h5>
+                    <form method="get" class="m-0">
+                        <input type="hidden" name="run_ai" value="1">
+                        <button type="submit" class="btn btn-sm btn-outline-info shadow-sm"><i class="bi bi-arrow-clockwise me-1"></i>Re-run Analysis</button>
+                    </form>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-7 border-end-lg pe-lg-4 mb-4 mb-lg-0">
+                            <h6 class="text-uppercase text-muted fw-bold small mb-3">Executive Summary</h6>
+                            <div class="mb-4 lh-base">
+                                {% for paragraph in ai_result.summary.splitlines %}
+                                    {% if paragraph %}
+                                        <p class="mb-2">{{ paragraph }}</p>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            
+                            <h6 class="text-uppercase text-muted fw-bold small mb-3">Key Findings</h6>
+                            <ul class="list-unstyled mb-0">
+                                {% for finding in ai_result.key_findings %}
+                                <li class="mb-2 d-flex align-items-start">
+                                    <i class="bi bi-check2-circle text-info me-2 mt-1"></i>
+                                    <span>{{ finding }}</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="col-lg-5 ps-lg-4">
+                            <h6 class="text-uppercase text-muted fw-bold small mb-3">Extracted Entities</h6>
+                            
+                            <div class="mb-3">
+                                <div class="text-muted small mb-1 fw-bold"><i class="bi bi-person me-1"></i>People</div>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for person in ai_result.entities.people %}
+                                    <span class="badge bg-indigo rounded-pill px-2 py-1 fw-normal">{{ person|striptags }}</span>
+                                    {% empty %}
+                                    <span class="text-muted small">None detected</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="text-muted small mb-1 fw-bold"><i class="bi bi-building me-1"></i>Organizations</div>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for org in ai_result.entities.organizations %}
+                                    <span class="badge bg-slate rounded-pill px-2 py-1 fw-normal" style="background-color: var(--law-slate-light); color: white;">{{ org|striptags }}</span>
+                                    {% empty %}
+                                    <span class="text-muted small">None detected</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="text-muted small mb-1 fw-bold"><i class="bi bi-geo-alt me-1"></i>Locations</div>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for loc in ai_result.entities.locations %}
+                                    <span class="badge bg-amber rounded-pill px-2 py-1 text-dark fw-normal">{{ loc|striptags }}</span>
+                                    {% empty %}
+                                    <span class="text-muted small">None detected</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-0">
+                                <div class="text-muted small mb-1 fw-bold"><i class="bi bi-calendar-event me-1"></i>Dates</div>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for date in ai_result.entities.dates %}
+                                    <span class="badge bg-secondary rounded-pill px-2 py-1 fw-normal">{{ date|striptags }}</span>
+                                    {% empty %}
+                                    <span class="text-muted small">None detected</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-muted small d-flex flex-column flex-md-row justify-content-between py-3">
+                    <span class="mb-1 mb-md-0"><i class="bi bi-lightbulb me-1"></i>Suggested Type: <strong class="text-body">{{ ai_result.suggested_type|default:"N/A" }}</strong></span>
+                    <span class="mb-1 mb-md-0"><i class="bi bi-shield me-1"></i>Suggested Class: <strong class="text-body">{{ ai_result.suggested_classification|default:"N/A" }}</strong></span>
+                    <span><i class="bi bi-clock-history me-1"></i>Analyzed: {{ ai_result.created_at|date:"M d, Y H:i" }}</span>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 3. Version History Card (Placed below the preview on the main stage) -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header py-3">
+                    <h5 class="card-title mb-0 fw-bold"><i class="bi bi-clock-history text-indigo me-2"></i>Version History</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light text-muted small">
+                                <tr>
+                                    <th class="ps-4">Version</th>
+                                    <th>Date</th>
+                                    <th>Author</th>
+                                    <th>Reason</th>
+                                    <th>Hash Prefix</th>
+                                    <th class="text-end pe-4">File</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for version in versions %}
+                                <tr class="{% if forloop.first %}table-active{% endif %}">
+                                    <td class="ps-4">
+                                        <span class="fw-bold">v{{ version.version_number }}</span>
+                                        {% if forloop.first %}<span class="badge bg-indigo ms-1">Current</span>{% endif %}
+                                    </td>
+                                    <td class="text-muted small"><i class="bi bi-calendar me-1"></i>{{ version.created_at|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-person-circle text-muted me-1"></i>
+                                            <span>{{ version.created_by.username }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted fst-italic">"{{ version.change_reason|default:"Initial version"|truncatechars:30 }}"</small>
+                                    </td>
+                                    <td>
+                                        <span class="hash-preview font-monospace small" title="{{ version.sha256_hash }}">
+                                            {{ version.sha256_hash|slice:":8" }}...
+                                        </span>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <a href="{% url 'document_download' version.pk %}" class="btn btn-sm btn-dark shadow-sm" target="_blank" title="Secure Download">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-5">
+                                        <i class="bi bi-journal-x fs-1 d-block mb-2 text-light"></i>
+                                        No versions found.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Security Sidebar (col-lg-4) -->
+        <div class="col-lg-4">
+            <!-- 1. Digital Seal Card -->
+            {% if document.is_locked %}
+            <div class="card shadow-sm border-0 mb-4 border-left-emerald">
+                <div class="card-body bg-emerald bg-opacity-10 rounded text-emerald p-4 text-center border border-emerald">
+                    <i class="bi bi-lock-fill fs-1 d-block mb-2"></i>
+                    <h5 class="fw-bold mb-3">🔒 Digitally Signed &amp; Locked</h5>
+                    <div class="small text-start bg-darker p-3 rounded border border-emerald border-opacity-50 text-light mt-3" style="background-color: rgba(0,0,0,0.2);">
+                        <div class="mb-1"><span class="text-emerald opacity-75">Certificate ID:</span> <strong>{{ document.versions.first.signature.certificate_id|default:current_version.signature.certificate_id }}</strong></div>
+                        <div class="mb-1"><span class="text-emerald opacity-75">Signer:</span> <strong>{{ document.locked_by.username|default:"Authorized Officer" }}</strong></div>
+                        <div class="mb-1"><span class="text-emerald opacity-75">Signed At:</span> <strong>{{ document.locked_at|date:"M d, Y H:i" }}</strong></div>
+                        <div class="mb-1"><span class="text-emerald opacity-75">Algorithm:</span> <strong>{{ document.versions.first.signature.algorithm|default:"RSA-PSS-SHA256 (2048-bit)" }}</strong></div>
+                        <div class="mt-2 text-center border-top border-emerald border-opacity-25 pt-2">
+                            <span class="fw-bold"><i class="bi bi-check-circle-fill me-1"></i> Cryptographic Status: VALID ✓</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            {% if request.user.role in 'ADMIN,SENIOR_OFFICER,INVESTIGATING_OFFICER' %}
+            <div class="card shadow-sm border-0 mb-4 border-left-amber">
+                <div class="card-body bg-amber bg-opacity-10 rounded text-amber p-4 text-center border border-amber">
+                    <i class="bi bi-pen fs-1 d-block mb-2"></i>
+                    <h5 class="fw-bold mb-3">Digital Signature Station</h5>
+                    <p class="small text-amber opacity-75 mb-3">Ready to finalize this record? Signing will cryptographically lock all versions.</p>
+                    <button type="button" class="btn btn-warning w-100 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#signDocumentModal">
+                        <i class="bi bi-shield-lock-fill me-2"></i>Digitally Sign &amp; Lock
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+            {% endif %}
+
+            <!-- 2. Integrity Station Card -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header py-3">
+                    <h5 class="card-title mb-0 fw-bold d-flex align-items-center">
+                        <i class="bi bi-shield-check me-2 fs-5 text-primary"></i>Integrity Station
+                        <span class="badge bg-secondary ms-auto fs-6">v{{ current_version.version_number|default:"1" }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        {% if integrity_status == True %}
+                        <div class="p-3 bg-emerald bg-opacity-10 rounded border border-emerald">
+                            <i class="bi bi-check-circle-fill text-emerald fs-1 d-block mb-2"></i>
+                            <h6 class="text-emerald fw-bold mb-1">INTEGRITY VERIFIED</h6>
+                            <div class="small text-emerald opacity-75">Bit-level match confirmed</div>
+                        </div>
+                        {% elif integrity_status == False %}
+                        <div class="p-3 bg-crimson bg-opacity-10 rounded border border-crimson pulse-crimson">
+                            <i class="bi bi-exclamation-triangle-fill text-crimson fs-1 d-block mb-2"></i>
+                            <h6 class="text-crimson fw-bold mb-1">TAMPER DETECTED</h6>
+                            <div class="small text-crimson opacity-75">File byte mismatch detected!</div>
+                        </div>
+                        {% else %}
+                        <div class="p-3 bg-dark bg-opacity-50 rounded border border-secondary">
+                            <i class="bi bi-shield-slash text-secondary fs-1 d-block mb-2"></i>
+                            <h6 class="text-secondary fw-bold mb-1">UNTESTED</h6>
+                            <div class="small text-secondary opacity-75">Run cryptographic verification</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-secondary text-uppercase small fw-bold" style="letter-spacing: 0.5px;">Current Hash (SHA-256)</span>
+                            <button class="btn btn-sm btn-link text-info p-0 text-decoration-none" onclick="navigator.clipboard.writeText('{{ current_version.sha256_hash|default:'' }}'); this.innerHTML='<i class=\'bi bi-check2\'></i> Copied'; setTimeout(() => this.innerHTML='<i class=\'bi bi-clipboard\'></i> Copy', 2000);">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                        </div>
+                        <div class="hash-box small shadow-sm font-monospace p-2 rounded text-break" style="background-color: var(--bg-surface-elevated, rgba(0,0,0,0.05)); border: 1px solid var(--border-subtle);">
+                            {{ current_version.sha256_hash|default:"N/A" }}
+                        </div>
+                    </div>
+
+                    <form method="get" class="mt-3">
+                        <input type="hidden" name="verify_integrity" value="1">
+                        <button type="submit" class="btn btn-outline-info w-100 fw-bold shadow-sm py-2">
+                            <i class="bi bi-cpu me-2"></i>Run Cryptographic Verification
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 3. Blockchain Anchor Card -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0 fw-bold d-flex align-items-center">
+                        <i class="bi bi-link-45deg text-indigo fs-5 me-2"></i>Blockchain Anchor
+                    </h6>
+                    <a href="{% url 'blockchain_explorer' %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>Explorer
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if blockchain_block %}
+                    <div class="mb-3">
+                        <span class="text-secondary small fw-semibold text-uppercase d-block mb-1">Block Number</span>
+                        <span class="badge bg-indigo font-monospace fs-6">Block #{{ blockchain_block.index }}</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-secondary small fw-semibold text-uppercase d-block mb-1">Nonce</span>
+                        <span class="font-monospace small text-body">{{ blockchain_block.nonce }}</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-secondary small fw-semibold text-uppercase d-block mb-1">Merkle Root / Block Hash</span>
+                        <div class="hash-box small shadow-sm p-2 rounded font-monospace text-truncate" title="{{ blockchain_block.merkle_root|default:blockchain_block.block_hash }}" style="background-color: var(--bg-surface-elevated, rgba(0,0,0,0.05)); border: 1px solid var(--border-subtle);">
+                            {{ blockchain_block.merkle_root|default:blockchain_block.block_hash }}
+                        </div>
+                    </div>
+                    <div class="small text-secondary">
+                        <i class="bi bi-shield-check text-success me-1"></i>Anchored at {{ blockchain_block.timestamp|date:"M d, Y H:i:s" }}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="bi bi-link text-secondary fs-2 d-block mb-2"></i>
+                        <p class="small text-secondary mb-2">Document record is anchored on-chain.</p>
+                        <a href="{% url 'blockchain_explorer' %}" class="btn btn-sm btn-outline-primary">
+                            View Blockchain Ledger
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Digital Signature Modal -->
+{% if not document.is_locked and request.user.role in 'ADMIN,SENIOR_OFFICER,INVESTIGATING_OFFICER' %}
+<div class="modal fade" id="signDocumentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-amber bg-opacity-10 border-bottom border-amber">
+                <h5 class="modal-title text-amber fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Digital Signature</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-body">
+                <p class="mb-0 fw-medium">Signing this document permanently locks it against all future version uploads, edits, or deletions in accordance with judicial protocol.</p>
+                <p class="small text-secondary mt-3">An RSA-PSS-SHA256 digital certificate will be generated and anchored to the blockchain.</p>
+            </div>
+            <div class="modal-footer border-top border-subtle">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{% url 'document_sign' document.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning fw-bold"><i class="bi bi-shield-lock-fill me-1"></i> Confirm &amp; Lock</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

@@ -403,6 +403,29 @@ body {
   background-color: transparent !important;
 }
 
+/* Version History Table Contrast Fix */
+[data-bs-theme="light"] .table tr.table-active,
+[data-bs-theme="light"] .table tr.table-active td {
+  background-color: #eff6ff !important; /* Soft luminous blue */
+  color: #1e3a8a !important;            /* High contrast dark blue */
+}
+
+[data-bs-theme="light"] .table tr.table-active td span,
+[data-bs-theme="light"] .table tr.table-active td small {
+  color: #3b82f6 !important;
+}
+
+[data-bs-theme="dark"] .table tr.table-active,
+[data-bs-theme="dark"] .table tr.table-active td {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+  color: #f8fafc !important;
+}
+
+[data-bs-theme="dark"] .table tr.table-active td span,
+[data-bs-theme="dark"] .table tr.table-active td small {
+  color: #93c5fd !important;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    FORM CONTROLS & INPUTS
    ───────────────────────────────────────────────────────────────────────── */

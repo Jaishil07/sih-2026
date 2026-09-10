@@ -31,6 +31,12 @@ class Document(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    is_locked = models.BooleanField(default=False, db_index=True)
+    locked_at = models.DateTimeField(null=True, blank=True)
+    locked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='locked_documents'
+    )
 
     def __str__(self):
         return self.title
@@ -52,3 +58,15 @@ class DocumentVersion(models.Model):
 
     def __str__(self):
         return f"{self.document.title} - v{self.version_number}"
+
+class DocumentSignature(models.Model):
+    version = models.OneToOneField(DocumentVersion, on_delete=models.CASCADE, related_name='signature')
+    signer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='signatures_rendered')
+    certificate_id = models.CharField(max_length=64, unique=True)
+    signature_hex = models.TextField()
+    public_key_pem = models.TextField()
+    signed_at = models.DateTimeField(auto_now_add=True)
+    algorithm = models.CharField(max_length=32, default="RSA-PSS-SHA256")
+    
+    def __str__(self):
+        return self.certificate_id

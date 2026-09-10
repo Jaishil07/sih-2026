@@ -8,6 +8,7 @@ urlpatterns = [
     path("accounts/login/", account_views.CustomLoginView.as_view(), name="login"),
     path("accounts/logout/", account_views.CustomLogoutView.as_view(), name="logout"),
     path("cases/", include("apps.cases.urls")),
+    path("documents/", include(("apps.documents.urls", "documents"), namespace="documents")),
     path("documents/", include("apps.documents.urls")),
     path("evidence/", include(("apps.evidence.urls", "evidence"), namespace="evidence")),
     path("evidence/", include("apps.evidence.urls")),

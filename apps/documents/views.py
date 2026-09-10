@@ -1,3 +1,4 @@
+import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -5,6 +6,7 @@ from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, Http404
 from django.contrib import messages
 from django.views.generic import ListView
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 
 from apps.cases.models import Case
 from apps.documents.models import Document, DocumentVersion
@@ -119,13 +121,55 @@ def document_detail_view(request, pk):
     else:
         form = DocumentVersionUploadForm()
 
+    # Read the file extension and determine file_type
+    latest_version = current_version
+    ext = os.path.splitext(getattr(latest_version, 'original_filename', None) or (os.path.basename(latest_version.file.name) if latest_version and latest_version.file else ''))[1].lower() if latest_version else ''
+    file_ext = ext
+    
+    if ext == '.pdf':
+        file_type = 'pdf'
+    elif ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg']:
+        file_type = 'image'
+    elif ext in ['.txt', '.log', '.json', '.csv']:
+        file_type = 'text'
+    else:
+        file_type = 'other'
+
+    preview_text_content = ''
+    if file_type == 'text' and latest_version and latest_version.file:
+        try:
+            if os.path.exists(latest_version.file.path):
+                with open(latest_version.file.path, 'r', encoding='utf-8', errors='replace') as f:
+                    preview_text_content = f.read(50 * 1024)
+        except Exception:
+            preview_text_content = "Unable to read text preview."
+
+    # Look up blockchain anchor block
+    blockchain_block = None
+    if current_version:
+        from apps.blockchain.models import Block
+        for b in Block.objects.order_by('-index')[:50]:
+            if any(
+                isinstance(tx, dict) and (
+                    tx.get('sha256_hash') == current_version.sha256_hash or
+                    (tx.get('doc_id') == document.id and tx.get('version') == current_version.version_number)
+                )
+                for tx in b.transactions
+            ):
+                blockchain_block = b
+                break
+
     return render(request, 'documents/document_detail.html', {
         'document': document,
         'current_version': current_version,
         'versions': versions,
         'integrity_status': integrity_status,
         'form': form,
-        'ai_result': ai_result
+        'ai_result': ai_result,
+        'file_type': file_type,
+        'file_ext': file_ext,
+        'preview_text_content': preview_text_content,
+        'blockchain_block': blockchain_block,
     })
 
 
@@ -162,3 +206,67 @@ def document_delete_view(request, pk):
     # GET method is not supported for delete/archive to prevent accidental/CSRF deletions.
     return redirect('document_detail', pk=document.id)
 
+@xframe_options_sameorigin
+@login_required
+def document_preview_view(request, pk):
+    document = get_object_or_404(Document, pk=pk)
+    if not can_view_document(request.user, document):
+        raise PermissionDenied
+        
+    version = document.versions.order_by('-version_number').first()
+    if not version or not version.file:
+        raise Http404("Document file missing.")
+
+    # In-memory decryption if enabled, or read bytes
+    try:
+        file_path = version.file.path
+        if not os.path.exists(file_path):
+            raise Http404("Document file missing.")
+    except Exception:
+        raise Http404("Document file missing.")
+
+    original_filename = getattr(version, 'original_filename', None) or os.path.basename(version.file.name)
+    ext = os.path.splitext(original_filename)[1].lower()
+    
+    content_types = {
+        '.pdf': 'application/pdf',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.txt': 'text/plain; charset=utf-8',
+        '.log': 'text/plain; charset=utf-8',
+        '.json': 'application/json',
+        '.csv': 'text/plain; charset=utf-8',
+    }
+    content_type = content_types.get(ext, 'application/octet-stream')
+    
+    log_audit_event(request.user, 'DOCUMENT_PREVIEWED', 'DocumentVersion', version.id)
+    
+    response = FileResponse(open(file_path, 'rb'), content_type=content_type)
+    response['Content-Disposition'] = f'inline; filename="{original_filename}"'
+    return response
+
+@login_required
+def document_sign_view(request, pk):
+    document = get_object_or_404(Document, pk=pk)
+    
+    # Check if authorized to sign. We reuse can_upload_document since it covers Admin, Senior, and assigned investigators.
+    if not can_upload_document(request.user, document.case):
+        raise PermissionDenied
+        
+    if request.method == 'POST':
+        version = document.versions.order_by('-version_number').first()
+        if not version:
+            messages.error(request, "No versions to sign.")
+            return redirect('document_detail', pk=document.id)
+            
+        try:
+            from apps.documents.services import sign_document_version
+            doc_sig = sign_document_version(version, request.user)
+            messages.success(request, f"Document digitally signed and locked! Cert ID: {doc_sig.certificate_id}")
+        except PermissionDenied as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, f"Failed to sign document: {str(e)}")
+            
+    return redirect('document_detail', pk=document.id)
