@@ -11,5 +11,6 @@ urlpatterns = [
     path("documents/", include("apps.documents.urls")),
     path("evidence/", include("apps.evidence.urls")),
     path("audit/", include("apps.audit.urls")),
+    path("", include("apps.ai_assistant.urls")),
     path("", account_views.DashboardView.as_view(), name="dashboard"),
 ]

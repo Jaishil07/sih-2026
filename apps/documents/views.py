@@ -45,8 +45,13 @@ def document_upload_view(request, case_id):
             
             try:
                 version = create_document_version(document, uploaded_file, request.user, change_reason)
+                
+                # Trigger AI processing
+                from apps.ai_assistant.services import process_document_with_ai
+                process_document_with_ai(document, request.user)
+                
                 log_audit_event(request.user, 'DOCUMENT_UPLOADED', 'Document', document.id)
-                messages.success(request, f"Document '{document.title}' uploaded successfully.")
+                messages.success(request, f"Document '{document.title}' uploaded and AI analysis initiated.")
                 return redirect('case_detail', pk=case.id)
             except Exception as e:
                 document.delete() # Rollback document if version creation fails
@@ -76,6 +81,15 @@ def document_detail_view(request, pk):
             log_audit_event(request.user, 'INTEGRITY_FAILED', 'DocumentVersion', current_version.id)
             messages.error(request, "TAMPER DETECTED: File integrity check failed!")
 
+    # Run AI Analysis on-demand
+    if 'run_ai' in request.GET:
+        from apps.ai_assistant.services import process_document_with_ai
+        process_document_with_ai(document, request.user)
+        messages.success(request, "AI Analysis completed.")
+        return redirect('document_detail', pk=document.id)
+
+    ai_result = document.ai_results.order_by('-created_at').first()
+
     # Version Upload form
     if request.method == 'POST':
         form = DocumentVersionUploadForm(request.POST, request.FILES)
@@ -84,8 +98,13 @@ def document_detail_view(request, pk):
             change_reason = form.cleaned_data['change_reason']
             try:
                 version = create_document_version(document, uploaded_file, request.user, change_reason)
+                
+                # Trigger AI processing for new version
+                from apps.ai_assistant.services import process_document_with_ai
+                process_document_with_ai(document, request.user)
+                
                 log_audit_event(request.user, 'VERSION_CREATED', 'Document', document.id)
-                messages.success(request, f"New version (v{version.version_number}) uploaded.")
+                messages.success(request, f"New version (v{version.version_number}) uploaded and AI analysis updated.")
                 return redirect('document_detail', pk=document.id)
             except Exception as e:
                 messages.error(request, f"Failed to upload new version: {e}")
@@ -97,7 +116,8 @@ def document_detail_view(request, pk):
         'current_version': current_version,
         'versions': versions,
         'integrity_status': integrity_status,
-        'form': form
+        'form': form,
+        'ai_result': ai_result
     })
 
 

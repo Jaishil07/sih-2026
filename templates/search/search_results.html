@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Global Search</li>
+            </ol>
+        </nav>
+        <h2>Search Intelligence</h2>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <form method="get" action="{% url 'global_search' %}">
+                    <div class="row g-2">
+                        <div class="col-md-7">
+                            <input type="text" name="q" class="form-control form-control-lg" placeholder="Search keywords, suspects, forensic reports..." value="{{ query }}">
+                        </div>
+                        <div class="col-md-3">
+                            <select name="case_id" class="form-select form-select-lg">
+                                <option value="">All Assigned Cases</option>
+                                {% for c in all_cases %}
+                                <option value="{{ c.id }}" {% if selected_case == c.id %}selected{% endif %}>{{ c.case_number }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary btn-lg w-100">Search</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if query %}
+<div class="row">
+    <!-- Documents -->
+    <div class="col-md-6 mb-4">
+        <h5 class="mb-3">Documents ({{ results.documents|length }})</h5>
+        {% for doc in results.documents %}
+        <div class="card shadow-sm border-0 mb-3 border-start border-4 border-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="card-title mb-0"><a href="{% url 'document_detail' doc.pk %}" class="text-decoration-none">{{ doc.title }}</a></h6>
+                    <span class="badge bg-secondary">{{ doc.document_type }}</span>
+                </div>
+                <div class="text-muted small mb-2">Case: <a href="{% url 'case_detail' doc.case.pk %}">{{ doc.case.case_number }}</a></div>
+                {% if doc.ai_results.first %}
+                <p class="small mb-0"><strong>AI Summary:</strong> {{ doc.ai_results.first.summary|truncatechars:150 }}</p>
+                {% else %}
+                <p class="small mb-0 text-muted">No AI summary available.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-muted small">No document matches found.</div>
+        {% endfor %}
+    </div>
+    
+    <!-- POIs -->
+    <div class="col-md-6 mb-4">
+        <h5 class="mb-3">Suspects & POIs ({{ results.suspects|length }})</h5>
+        {% for poi in results.suspects %}
+        <div class="card shadow-sm border-0 mb-3 border-start border-4 border-danger">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="card-title mb-0">{{ poi.name }} {% if poi.alias %}<span class="text-muted">"{{ poi.alias }}"</span>{% endif %}</h6>
+                    <span class="badge bg-danger">{{ poi.get_role_in_case_display }}</span>
+                </div>
+                <div class="text-muted small mb-2">Case: <a href="{% url 'case_detail' poi.case.pk %}">{{ poi.case.case_number }}</a></div>
+                {% if poi.notes %}
+                <p class="small mb-0">{{ poi.notes|truncatechars:100 }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-muted small">No POI matches found.</div>
+        {% endfor %}
+    </div>
+
+    <!-- Evidence -->
+    <div class="col-md-6 mb-4">
+        <h5 class="mb-3">Tracked Evidence ({{ results.evidence|length }})</h5>
+        {% for ev in results.evidence %}
+        <div class="card shadow-sm border-0 mb-3 border-start border-4 border-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="card-title mb-0"><a href="{% url 'evidence_detail' ev.pk %}" class="text-decoration-none">{{ ev.evidence_number }}</a></h6>
+                    <span class="badge {% if ev.status == 'APPROVED' %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ ev.get_status_display }}</span>
+                </div>
+                <div class="text-muted small mb-2">Case: <a href="{% url 'case_detail' ev.case.pk %}">{{ ev.case.case_number }}</a> | Custodian: {{ ev.current_custodian.username }}</div>
+                <p class="small mb-0">{{ ev.description|truncatechars:100 }}</p>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-muted small">No evidence matches found.</div>
+        {% endfor %}
+    </div>
+
+    <!-- Notes -->
+    <div class="col-md-6 mb-4">
+        <h5 class="mb-3">Case Notes ({{ results.notes|length }})</h5>
+        {% for note in results.notes %}
+        <div class="card shadow-sm border-0 mb-3 border-start border-4 border-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold small">{{ note.author.username }}</span>
+                    <span class="text-muted small">{{ note.created_at|date:"M d, Y" }}</span>
+                </div>
+                <div class="text-muted small mb-2">Case: <a href="{% url 'case_detail' note.case.pk %}">{{ note.case.case_number }}</a></div>
+                <p class="small mb-0">{{ note.content|truncatechars:150 }}</p>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-muted small">No note matches found.</div>
+        {% endfor %}
+    </div>
+</div>
+
+{% if not results.documents and not results.suspects and not results.evidence and not results.notes %}
+<div class="text-center py-5">
+    <h5 class="text-muted">No matches found in your assigned cases.</h5>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

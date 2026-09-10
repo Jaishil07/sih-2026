@@ -34,10 +34,14 @@
                         <a class="nav-link {% if 'evidence' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'evidence_list' %}">Evidence</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Search</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'audit_list' %}active{% endif %}" href="{% url 'audit_list' %}">
+                            <i class="bi bi-shield-check me-1"></i> Audit Logs
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if 'audit' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'audit_list' %}">Audit</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'global_search' %}active{% endif %}" href="{% url 'global_search' %}">
+                            <i class="bi bi-search me-1"></i> Search
+                        </a>
                     </li>
                 </ul>
                 
