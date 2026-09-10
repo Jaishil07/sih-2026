@@ -53,8 +53,10 @@
                     <span class="badge bg-secondary">{{ doc.document_type }}</span>
                 </div>
                 <div class="text-muted small mb-2">Case: <a href="{% url 'case_detail' doc.case.pk %}">{{ doc.case.case_number }}</a></div>
-                {% if doc.ai_results.first %}
-                <p class="small mb-0"><strong>AI Summary:</strong> {{ doc.ai_results.first.summary|truncatechars:150 }}</p>
+                {% if doc.sanitized_snippet %}
+                <p class="small mb-0 text-secondary"><strong>AI Summary:</strong> {{ doc.sanitized_snippet }}</p>
+                {% elif doc.ai_results.first %}
+                <p class="small mb-0 text-secondary"><strong>AI Summary:</strong> {{ doc.ai_results.first.summary|striptags|truncatechars:160 }}</p>
                 {% else %}
                 <p class="small mb-0 text-muted">No AI summary available.</p>
                 {% endif %}
