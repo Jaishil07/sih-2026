@@ -6,6 +6,16 @@ Suraksha Docs guarantees evidentiary integrity from the point of ingestion to co
 
 ---
 
+## Hackathon Context & Problem Statement
+
+**Suraksha Docs** was engineered and prototyped during an intensive **36-hour hackathon** on **10th–11th September 2026** at **Karnavati University**.
+
+* **Initiative:** Smart India Hackathon (SIH) 2026
+* **Problem Statement ID:** 26190
+* **Core Objective:** Build a tamper-evident, verifiable digital evidence management platform and chain-of-custody workflow engineered to comply with modern legal frameworks (Section 63 of the Bharatiya Sakshya Adhiniyam / Section 65B IEA).
+
+---
+
 ## Key Capabilities
 
 * **Cryptographic Evidence Ingestion:** Computes client-verified **SHA-256** checksums upon file ingestion, ensuring any post-upload alteration is immediately detected.
